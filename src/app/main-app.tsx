@@ -54,26 +54,38 @@ const MainApp: React.FC = () => {
 
   useEffect(() => {
     const unsubscribes: (() => void)[] = [];
+    const collectionsToLoad = [collections.USERS, collections.CLASSES, collections.ASSIGNMENTS, collections.SUBMISSIONS];
+    let loadedCount = 0;
 
-    const setupSubscription = (collectionName: string, setter: React.Dispatch<React.SetStateAction<any[]>>) => {
+    const onDataLoaded = () => {
+      loadedCount++;
+      if (loadedCount >= collectionsToLoad.length) {
+        setIsLoading(false);
+      }
+    };
+    
+    const setupSubscription = (
+      collectionName: string,
+      setter: React.Dispatch<React.SetStateAction<any[]>>
+    ) => {
       const q = query(collection(db, collectionName));
       const unsubscribe = onSnapshot(q, async (querySnapshot) => {
         const list = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        if (collectionName === collections.USERS && list.length === 0) {
+        if (collectionName === collections.USERS && querySnapshot.empty) {
           const adminId = 'admin-001';
-          const adminDoc = await getDoc(doc(db, collections.USERS, adminId));
-          if (!adminDoc.exists()) {
-            const adminUser: User = { id: adminId, username: 'admin', password: 'admin123', fullName: 'Quản trị viên', role: UserRole.ADMIN };
-            await saveData(collections.USERS, adminUser.id, adminUser);
-            // The list will be updated by the listener, no need to set here
-          }
+          const adminUser: User = { id: adminId, username: 'admin', password: 'admin123', fullName: 'Quản trị viên', role: UserRole.ADMIN };
+          await saveData(collections.USERS, adminUser.id, adminUser);
+          // Listener will re-trigger with the new user, so we don't call setter here.
+          // We call onDataLoaded in the re-triggered snapshot.
         } else {
           setter(list);
+          onDataLoaded();
         }
       }, (error) => {
         console.error(`Error fetching ${collectionName}:`, error);
         toast({ variant: 'destructive', title: `Lỗi đồng bộ ${collectionName}`, description: 'Vui lòng kiểm tra kết nối mạng và cấu hình Firebase.' });
+        onDataLoaded(); // Mark as loaded even on error to prevent getting stuck
       });
       return unsubscribe;
     };
@@ -81,10 +93,7 @@ const MainApp: React.FC = () => {
     unsubscribes.push(setupSubscription(collections.USERS, setUsers));
     unsubscribes.push(setupSubscription(collections.CLASSES, setClasses));
     unsubscribes.push(setupSubscription(collections.ASSIGNMENTS, setAssignments));
-    unsubscribes.push(setupSubscription(collections.SUBMISSIONS, (data) => {
-      setSubmissions(data);
-      setIsLoading(false); 
-    }));
+    unsubscribes.push(setupSubscription(collections.SUBMISSIONS, setSubmissions));
     
     try {
       const savedUser = localStorage.getItem('edu_session_user');
