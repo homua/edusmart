@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Trash2, ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, ChevronDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface AssignmentFormProps {
@@ -63,6 +64,13 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
     toast({ title: "Thành công!", description: "Đã tạo bài tập mới." });
   };
 
+  const selectedClassesText = classIds.length > 0
+    ? classes
+        .filter(c => classIds.includes(c.id))
+        .map(c => c.name)
+        .join(', ')
+    : "Chọn một hoặc nhiều lớp...";
+
   return (
     <div className="space-y-8 max-w-4xl mx-auto animate-in fade-in duration-500">
       <div className="flex items-center gap-4">
@@ -81,16 +89,32 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
           </div>
           <div className="space-y-2">
             <Label htmlFor="classes" className="text-lg font-bold">Giao cho lớp</Label>
-             <Select onValueChange={(value) => setClassIds([value])}>
-                <SelectTrigger className="py-6 text-lg rounded-xl">
-                    <SelectValue placeholder="Chọn một lớp học..." />
-                </SelectTrigger>
-                <SelectContent>
+             <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button id="classes" variant="outline" className="py-6 text-lg rounded-xl w-full justify-between font-normal text-left">
+                         <span className="truncate">{selectedClassesText}</span>
+                         <ChevronDown className="h-4 w-4 opacity-50" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)]">
                     {classes.map(c => (
-                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        <DropdownMenuCheckboxItem
+                            key={c.id}
+                            checked={classIds.includes(c.id)}
+                            onCheckedChange={checked => {
+                                setClassIds(currentIds => 
+                                    checked 
+                                    ? [...currentIds, c.id]
+                                    : currentIds.filter(id => id !== c.id)
+                                )
+                            }}
+                            onSelect={e => e.preventDefault()}
+                        >
+                            {c.name}
+                        </DropdownMenuCheckboxItem>
                     ))}
-                </SelectContent>
-            </Select>
+                </DropdownMenuContent>
+             </DropdownMenu>
           </div>
         </CardContent>
       </Card>
