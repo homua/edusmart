@@ -113,7 +113,9 @@ const MainApp: React.FC = () => {
 
   useEffect(() => {
     if (!currentUser) {
-      setView('HOME');
+      if (view !== 'AUTH') {
+        setView('HOME');
+      }
       localStorage.removeItem('edu_session_user');
     } else {
       try {
