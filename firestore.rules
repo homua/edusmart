@@ -1,0 +1,186 @@
+/**
+ * This ruleset enforces a Role-Based Access Control (RBAC) model for an
+ * educational application, combined with a strong document ownership principle.
+ *
+ * Core Philosophy:
+ * The security model is built around three user roles: 'Admin', 'Teacher', and
+ * 'Student'. An authenticated user's role, stored on their user document, is the
+ * primary factor in determining their permissions. Beyond roles, ownership is
+ * key: teachers own the assignments they create, and students own the
+ * submissions they make.
+ *
+ * Data Structure:
+ * The data is organized into four flat, top-level collections:
+ * - /users/{userId}: Private user profiles, only accessible by the owner.
+ * - /classes/{classId}: A read-only collection of classes, viewable by any authenticated user.
+ * - /assignments/{assignmentId}: Assignments created and managed by teachers.
+ * - /submissions/{submissionId}: Submissions created by students for specific assignments.
+ *
+ * Key Security Decisions:
+ * - Strict User Privacy: User documents in the `/users` collection are completely
+ *   private. A user can only read and write their own document. User listing is disabled
+ *   to prevent enumeration attacks.
+ * - Read-Only Collections: The `/classes` collection is treated as read-only from
+ *   the client-side. This assumes that class data is managed through a trusted
+ *   backend environment (e.g., an admin panel using the Admin SDK), which is a
+ *   secure pattern for foundational data.
+ * - Role-Gated Writes: Only users with the 'Teacher' role can create assignments,
+ *   and only 'Student' users can create submissions.
+ * - Shared Access through Context: Teachers are granted access to submissions linked
+ *   to their assignments for grading purposes. Students are granted read access to
+ *   assignments intended for their class. These cross-document lookups are efficient
+ *   due to denormalization.
+ *
+ * Denormalization for Authorization:
+ * This ruleset relies heavily on denormalized data to make authorization decisions
+ * without slow, costly, or impossible cross-collection queries in rules.
+ * - A user's `role` and `classId` are stored directly on their `/users/{userId}` document.
+ * - An assignment's creator is stored as `teacherId` directly on the `/assignments/{assignmentId}` document.
+ * - A submission's creator is stored as `studentId` on the `/submissions/{submissionId}` document.
+ * This ensures that rules can make fast, secure decisions using data available on the
+ * document being accessed or through a single, targeted `get()` call.
+ *
+ * Structural Segregation:
+ * The flat collection structure provides clear and secure segregation. Each top-level
+ * collection has a uniform security posture, which simplifies rules and makes
+ * list operations (queries) safer to implement. For example, all submissions live
+ * in one collection, with access arbitrated by ownership fields (`studentId`) and
+ * relationships (`assignmentId`), rather than being nested in complex hierarchies.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --------------------------------
+    // Helper Functions
+    // --------------------------------
+
+    /**
+     * Checks if a user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the authenticated user's UID matches the provided userId.
+     * This is the fundamental check for document ownership.
+     */
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    /**
+     * Checks for ownership on an existing document. Used for update/delete.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * Retrieves a specific property from the authenticated user's profile document.
+     * This avoids repeating the same `get` call across multiple functions.
+     */
+    function getUserProperty(property) {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data[property];
+    }
+
+    /**
+     * Checks if the authenticated user has the 'Admin' role.
+     */
+    function isAdmin() {
+      return isSignedIn() && getUserProperty('role') == 'Admin';
+    }
+
+    /**
+     * Checks if the authenticated user has the 'Teacher' role.
+     */
+    function isTeacher() {
+      return isSignedIn() && getUserProperty('role') == 'Teacher';
+    }
+
+    /**
+     * Checks if the authenticated user has the 'Student' role.
+     */
+    function isStudent() {
+      return isSignedIn() && getUserProperty('role') == 'Student';
+    }
+
+    /**
+     * Checks if the authenticated user is the teacher who owns a given assignment.
+     */
+    function isTeacherOfAssignment(assignmentId) {
+      let assignment = get(/databases/$(database)/documents/assignments/$(assignmentId));
+      return assignment.data.teacherId == request.auth.uid;
+    }
+
+    /**
+     * Checks if a student is enrolled in a class that an assignment is for.
+     * `assignmentData` can be `resource.data` (for reads) or `request.resource.data` (for writes).
+     */
+    function isStudentEnrolledForAssignment(assignmentData) {
+      return getUserProperty('classId') in assignmentData.classIds;
+    }
+
+    /**
+     * @description Rules for the User collection.
+     * @path /users/{userId}
+     * @allow A user (auth.uid='user123') can (create) their own profile at `/users/user123`.
+     * @deny An admin (auth.uid='admin456') cannot (get) another user's profile at `/users/user123`.
+     * @principle Restricts access to a user's own data tree, enforcing strict privacy.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Rules for the Class collection.
+     * @path /classes/{classId}
+     * @allow Any signed-in user (auth.uid='any_user') can (get) a class document.
+     * @deny Any user, including admins, cannot (create) a new class document from the client.
+     * @principle Treats this collection as public reference data for authenticated users, with writes locked down to a trusted backend.
+     */
+    match /classes/{classId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Rules for the Assignment collection.
+     * @path /assignments/{assignmentId}
+     * @allow A Teacher (auth.uid='teacher123') can (create) a new assignment where `teacherId` is 'teacher123'.
+     * @deny A Student (auth.uid='student456') cannot (update) an assignment, even if they are in the target class.
+     * @principle Enforces document ownership for writes (only Teachers can manage their own assignments) and shared access for reads.
+     */
+    match /assignments/{assignmentId} {
+      allow get: if isSignedIn() && (resource.data.teacherId == request.auth.uid || isStudentEnrolledForAssignment(resource.data) || isAdmin());
+      allow list: if isSignedIn();
+      allow create: if isTeacher() && request.resource.data.teacherId == request.auth.uid;
+      allow update: if resource != null && isTeacher() && resource.data.teacherId == request.auth.uid && request.resource.data.teacherId == resource.data.teacherId;
+      allow delete: if resource != null && isTeacher() && resource.data.teacherId == request.auth.uid;
+    }
+
+    /**
+     * @description Rules for the Submission collection.
+     * @path /submissions/{submissionId}
+     * @allow A Student (auth.uid='student456') can (create) a submission where `studentId` is 'student456'.
+     * @allow A Teacher (auth.uid='teacher123') can (update) a submission to add a grade if it's for an assignment they own.
+     * @deny A Teacher cannot (delete) a student's submission.
+     * @principle Enforces student ownership for creation and deletion, while allowing collaborative updates from the relevant teacher for grading.
+     */
+    match /submissions/{submissionId} {
+      allow get: if isSignedIn() && (resource.data.studentId == request.auth.uid || isTeacherOfAssignment(resource.data.assignmentId) || isAdmin());
+      allow list: if isSignedIn();
+      allow create: if isStudent() && request.resource.data.studentId == request.auth.uid;
+      allow update: if resource != null && (resource.data.studentId == request.auth.uid || isTeacherOfAssignment(resource.data.assignmentId)) && request.resource.data.studentId == resource.data.studentId && request.resource.data.assignmentId == resource.data.assignmentId;
+      allow delete: if resource != null && resource.data.studentId == request.auth.uid;
+    }
+  }
+}

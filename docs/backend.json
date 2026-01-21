@@ -1,0 +1,226 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user in the EduSmart Cloud application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user entity."
+        },
+        "username": {
+          "type": "string",
+          "description": "The user's username."
+        },
+        "password": {
+          "type": "string",
+          "description": "The user's password. Note: In a real-world application, passwords should be securely hashed and salted."
+        },
+        "fullName": {
+          "type": "string",
+          "description": "The user's full name."
+        },
+        "role": {
+          "type": "string",
+          "description": "The user's role (e.g., Admin, Teacher, Student)."
+        },
+        "classId": {
+          "type": "string",
+          "description": "Reference to Class. (Relationship: Class 1:N User).  The ID of the class the user belongs to, if applicable."
+        }
+      },
+      "required": [
+        "id",
+        "username",
+        "password",
+        "fullName",
+        "role"
+      ]
+    },
+    "Class": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Class",
+      "type": "object",
+      "description": "Represents a class in the EduSmart Cloud application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the class entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the class."
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "Assignment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Assignment",
+      "type": "object",
+      "description": "Represents an assignment in the EduSmart Cloud application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the assignment entity."
+        },
+        "teacherId": {
+          "type": "string",
+          "description": "Reference to User (Teacher). (Relationship: User 1:N Assignment). The ID of the teacher who created the assignment."
+        },
+        "classIds": {
+          "type": "array",
+          "description": "References to Class. (Relationship: Class N:N Assignment). The IDs of the classes the assignment is assigned to.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the assignment."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the assignment."
+        },
+        "dueDate": {
+          "type": "string",
+          "description": "The due date of the assignment.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "teacherId",
+        "classIds",
+        "title",
+        "description",
+        "dueDate"
+      ]
+    },
+    "Submission": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Submission",
+      "type": "object",
+      "description": "Represents a student's submission for an assignment.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the submission entity."
+        },
+        "assignmentId": {
+          "type": "string",
+          "description": "Reference to Assignment. (Relationship: Assignment 1:N Submission). The ID of the assignment the submission is for."
+        },
+        "studentId": {
+          "type": "string",
+          "description": "Reference to User (Student). (Relationship: User 1:N Submission). The ID of the student who submitted the assignment."
+        },
+        "submissionDate": {
+          "type": "string",
+          "description": "The date and time the submission was submitted.",
+          "format": "date-time"
+        },
+        "content": {
+          "type": "string",
+          "description": "The content of the submission."
+        },
+        "grade": {
+          "type": "number",
+          "description": "The grade received for the submission."
+        },
+        "feedback": {
+          "type": "string",
+          "description": "Teacher feedback for the submission."
+        }
+      },
+      "required": [
+        "id",
+        "assignmentId",
+        "studentId",
+        "submissionDate",
+        "content"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user data.  The 'id' field is used as the document ID. User roles (Admin, Teacher, Student) are stored directly in each user document, enabling role-based access control.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/classes/{classId}",
+        "definition": {
+          "entityName": "Class",
+          "schema": {
+            "$ref": "#/backend/entities/Class"
+          },
+          "description": "Stores class data. The 'id' field is used as the document ID.",
+          "params": [
+            {
+              "name": "classId",
+              "description": "The unique identifier for the class."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/assignments/{assignmentId}",
+        "definition": {
+          "entityName": "Assignment",
+          "schema": {
+            "$ref": "#/backend/entities/Assignment"
+          },
+          "description": "Stores assignment data. The 'id' field is used as the document ID. Includes 'teacherId' to denote the owner. The `classIds` array represents the classes to which the assignment is assigned.",
+          "params": [
+            {
+              "name": "assignmentId",
+              "description": "The unique identifier for the assignment."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/submissions/{submissionId}",
+        "definition": {
+          "entityName": "Submission",
+          "schema": {
+            "$ref": "#/backend/entities/Submission"
+          },
+          "description": "Stores submission data. The 'id' field is used as the document ID. Includes 'studentId' and 'assignmentId' to link submissions to students and assignments.",
+          "params": [
+            {
+              "name": "submissionId",
+              "description": "The unique identifier for the submission."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability, following the defined core design principles. It leverages denormalization for authorization, structural segregation for security, and standardized access modeling.  Each collection is designed to have a homogeneous security posture.  The structure aims to support secure 'list' operations (QAPs) and maintain data integrity.\n\n*   **Users:** Stores user information. Class ID is stored within the user document, relating users to classes. Roles are also stored in the user document enabling simple DBAC.\n*   **Classes:** Stores class information. \n*   **Assignments:** Stores assignment data. Includes `teacherId` to define the teacher who created it, and `classIds` as an array to represent the many-to-many relationship between classes and assignments. This allows teachers to create an assignment once, and assign it to many classes.\n*   **Submissions:** Stores student submissions. Includes `studentId` and `assignmentId` to link submissions to students and assignments.\n\nAuthorization Independence:\n\n*   The data model implements authorization independence by storing the necessary authorization data (user roles, class assignments) directly within the documents where it's needed. This avoids the need for `get()` calls in security rules to retrieve parent document data. For example, the `User` entity stores role and class information, allowing for direct authorization checks without needing to fetch related class documents.\n\nSupporting QAPs (Rules are not Filters):\n\n*   Structural segregation is used to support secure `list` operations. For instance, user drafts are stored in a private collection under the user's ID, while public data could reside in a separate, publicly accessible collection (if there were public data). In this case all data is private, so segregation is achieved by the path based ownership of User, Class, and the explicit `teacherId` and `classIds` fields on Assignment, as well as `studentId` and `assignmentId` on Submission.\n"
+  }
+}
