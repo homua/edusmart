@@ -223,6 +223,7 @@ const MainApp: React.FC = () => {
                 onAddUser={async (u) => await saveData(COLLECTIONS.USERS, u.id, u)}
                 onDeleteUser={handleDeleteUser}
                 onAddClass={async (c) => await saveData(COLLECTIONS.CLASSES, c.id, c)}
+                onUpdateClass={async (c) => await saveData(COLLECTIONS.CLASSES, c.id, c)}
                 onDeleteClass={async (id) => await deleteData(COLLECTIONS.CLASSES, id)}
                 onExport={handleExportData}
                 onImport={handleImportData}

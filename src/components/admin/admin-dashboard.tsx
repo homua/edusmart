@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Trash2, Upload, Download, UserPlus } from 'lucide-react';
+import { Plus, Trash2, Upload, Download, UserPlus, Pencil } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 
@@ -20,6 +20,7 @@ interface AdminDashboardProps {
   onAddUser: (user: User) => Promise<void>;
   onDeleteUser: (id: string) => Promise<void>;
   onAddClass: (cls: Class) => Promise<void>;
+  onUpdateClass: (cls: Class) => Promise<void>;
   onDeleteClass: (id: string) => Promise<void>;
   onExport: () => void;
   onImport: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -31,6 +32,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onAddUser,
   onDeleteUser,
   onAddClass,
+  onUpdateClass,
   onDeleteClass,
   onExport,
   onImport,
@@ -38,6 +40,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const { toast } = useToast();
   const [isUserModalOpen, setUserModalOpen] = useState(false);
   const [isClassModalOpen, setClassModalOpen] = useState(false);
+  const [isClassEditModalOpen, setClassEditModalOpen] = useState(false);
 
   // User form state
   const [fullName, setFullName] = useState('');
@@ -48,6 +51,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Class form state
   const [className, setClassName] = useState('');
   const [teacherId, setTeacherId] = useState('');
+
+  // Edit Class state
+  const [classToEdit, setClassToEdit] = useState<Class | null>(null);
+  const [editClassName, setEditClassName] = useState('');
+  const [editTeacherId, setEditTeacherId] = useState('');
 
   // Student list state
   const [selectedClassId, setSelectedClassId] = useState<string>('');
@@ -95,6 +103,30 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setClassModalOpen(false);
   };
   
+  const handleOpenEditClassModal = (cls: Class) => {
+    setClassToEdit(cls);
+    setEditClassName(cls.name);
+    setEditTeacherId(cls.teacherId || '');
+    setClassEditModalOpen(true);
+  };
+
+  const handleUpdateClass = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!classToEdit || !editClassName.trim()) {
+      toast({ variant: 'destructive', description: 'Tên lớp không được để trống.' });
+      return;
+    }
+    const updatedClass: Class = {
+      ...classToEdit,
+      name: editClassName.trim(),
+      teacherId: editTeacherId || undefined,
+    };
+    await onUpdateClass(updatedClass);
+    toast({ description: 'Đã cập nhật lớp học.' });
+    setClassEditModalOpen(false);
+    setClassToEdit(null);
+  };
+
   // Data processing for user roles
   const admins = users.filter(u => u.role === 'ADMIN');
   const allTeachers = users.filter(u => u.role === 'TEACHER');
@@ -289,6 +321,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     <TableCell className="font-medium">{cls.name}</TableCell>
                     <TableCell>{users.find(u => u.id === cls.teacherId)?.fullName || 'Chưa gán'}</TableCell>
                     <TableCell className="text-right">
+                       <Button variant="ghost" size="icon" onClick={() => handleOpenEditClassModal(cls)} className="text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full">
+                        <Pencil className="h-4 w-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" onClick={() => onDeleteClass(cls.id)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full">
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -297,6 +332,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 ))}
               </TableBody>
             </Table>
+            <Dialog open={isClassEditModalOpen} onOpenChange={setClassEditModalOpen}>
+              <DialogContent>
+                <DialogHeader><DialogTitle>Chỉnh sửa lớp học</DialogTitle></DialogHeader>
+                <form onSubmit={handleUpdateClass} className="space-y-4">
+                  <Input placeholder="Tên lớp học" value={editClassName} onChange={e => setEditClassName(e.target.value)} required />
+                  <Select onValueChange={setEditTeacherId} value={editTeacherId}>
+                    <SelectTrigger><SelectValue placeholder="Chọn giáo viên chủ nhiệm (tùy chọn)" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Không gán</SelectItem>
+                      {allTeachers.map(t => <SelectItem key={t.id} value={t.id!}>{t.fullName}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <Button type="submit" className="w-full">Lưu thay đổi</Button>
+                </form>
+              </DialogContent>
+            </Dialog>
           </CardContent>
         </Card>
       </div>
@@ -305,5 +356,3 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 };
 
 export default AdminDashboard;
-
-    
