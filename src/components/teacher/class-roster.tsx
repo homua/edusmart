@@ -163,6 +163,7 @@ const ClassRoster: React.FC<ClassRosterProps> = ({
                 <div>
                   <h4 className="font-bold text-foreground">{s.fullName}</h4>
                   <span className="text-xs text-muted-foreground font-mono">@{s.username}</span>
+                  <div className="text-xs text-muted-foreground font-mono mt-1">Mật khẩu: <span className="font-bold text-foreground">{s.password}</span></div>
                 </div>
               </div>
               <Button onClick={() => onDeleteStudent(s.id)} variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
