@@ -11,6 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Trash2, Upload, Download, UserPlus } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Separator } from '@/components/ui/separator';
 
 interface AdminDashboardProps {
   users: User[];
@@ -90,7 +93,42 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setClassModalOpen(false);
   };
   
-  const teachers = users.filter(u => u.role === 'TEACHER');
+  // Data processing for user roles
+  const admins = users.filter(u => u.role === 'ADMIN');
+  const allTeachers = users.filter(u => u.role === 'TEACHER');
+  
+  const headTeacherIds = new Set(classes.map(c => c.teacherId).filter(Boolean));
+  const headTeachers = allTeachers.filter(u => headTeacherIds.has(u.id!));
+  const subjectTeachers = allTeachers.filter(u => !headTeacherIds.has(u.id!));
+  
+  const studentsByClass = classes.reduce((acc, cls) => {
+    acc[cls.id] = users.filter(s => s.role === 'STUDENT' && s.classId === cls.id);
+    return acc;
+  }, {} as Record<string, User[]>);
+  const unassignedStudents = users.filter(s => s.role === 'STUDENT' && (!s.classId || !classes.some(c => c.id === s.classId)));
+
+  const UserTable: React.FC<{ users: User[]; onDeleteUser: (id: string) => Promise<void>; }> = ({ users, onDeleteUser }) => (
+    <Table>
+      <TableBody>
+        {users.map(user => (
+          <TableRow key={user.id}>
+            <TableCell>
+              <div className="font-medium">{user.fullName}</div>
+              <div className="text-xs text-muted-foreground">@{user.username}</div>
+            </TableCell>
+            <TableCell className="text-right">
+              <Button variant="ghost" size="icon" onClick={() => onDeleteUser(user.id)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </TableCell>
+          </TableRow>
+        ))}
+        {users.length === 0 && (
+          <TableRow><TableCell colSpan={2} className="h-24 text-center text-muted-foreground">Không có người dùng trong danh sách này.</TableCell></TableRow>
+        )}
+      </TableBody>
+    </Table>
+  );
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -146,31 +184,47 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </Dialog>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Họ và tên</TableHead>
-                  <TableHead>Vai trò</TableHead>
-                  <TableHead className="text-right">Hành động</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map(user => (
-                  <TableRow key={user.id}>
-                    <TableCell>
-                        <div className="font-medium">{user.fullName}</div>
-                        <div className="text-xs text-muted-foreground">@{user.username}</div>
-                    </TableCell>
-                    <TableCell>{user.role}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" onClick={() => onDeleteUser(user.id)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <Tabs defaultValue="students" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="students">Học sinh</TabsTrigger>
+                <TabsTrigger value="teachers">Giáo viên</TabsTrigger>
+                <TabsTrigger value="admins">Quản trị viên</TabsTrigger>
+              </TabsList>
+              <TabsContent value="students" className="mt-4">
+                <Accordion type="single" collapsible className="w-full">
+                  {classes.map(cls => (
+                    <AccordionItem value={cls.id} key={cls.id}>
+                      <AccordionTrigger>{cls.name} ({studentsByClass[cls.id]?.length || 0} học sinh)</AccordionTrigger>
+                      <AccordionContent>
+                        <UserTable users={studentsByClass[cls.id] || []} onDeleteUser={onDeleteUser} />
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                  {unassignedStudents.length > 0 && (
+                     <AccordionItem value="unassigned">
+                      <AccordionTrigger className="text-destructive">Chưa phân lớp ({unassignedStudents.length} học sinh)</AccordionTrigger>
+                      <AccordionContent>
+                        <UserTable users={unassignedStudents} onDeleteUser={onDeleteUser} />
+                      </AccordionContent>
+                    </AccordionItem>
+                  )}
+                </Accordion>
+              </TabsContent>
+              <TabsContent value="teachers" className="mt-4 space-y-4">
+                 <div>
+                    <h4 className="font-bold mb-2 px-1 text-primary">Giáo viên Chủ nhiệm ({headTeachers.length})</h4>
+                    <UserTable users={headTeachers} onDeleteUser={onDeleteUser} />
+                 </div>
+                 <Separator />
+                 <div>
+                    <h4 className="font-bold mb-2 px-1">Giáo viên Bộ môn ({subjectTeachers.length})</h4>
+                    <UserTable users={subjectTeachers} onDeleteUser={onDeleteUser} />
+                 </div>
+              </TabsContent>
+              <TabsContent value="admins" className="mt-4">
+                <UserTable users={admins} onDeleteUser={onDeleteUser} />
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
 
@@ -190,9 +244,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <form onSubmit={handleAddClass} className="space-y-4">
                   <Input placeholder="Tên lớp học" value={className} onChange={e => setClassName(e.target.value)} required />
                   <Select onValueChange={setTeacherId} value={teacherId}>
-                    <SelectTrigger><SelectValue placeholder="Chọn giáo viên (tùy chọn)" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Chọn giáo viên chủ nhiệm (tùy chọn)" /></SelectTrigger>
                     <SelectContent>
-                      {teachers.map(t => <SelectItem key={t.id} value={t.id}>{t.fullName}</SelectItem>)}
+                      {allTeachers.map(t => <SelectItem key={t.id} value={t.id!}>{t.fullName}</SelectItem>)}
                     </SelectContent>
                   </Select>
                   <Button type="submit" className="w-full">Thêm lớp học</Button>

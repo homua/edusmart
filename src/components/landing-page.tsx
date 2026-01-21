@@ -14,10 +14,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
         <Logo />
       </div>
       <h2 className="text-4xl md:text-6xl font-black text-foreground mb-6 tracking-tight leading-tight max-w-2xl">
-        Nền tảng Giáo dục <br/><span className="text-primary">Lưu trữ Đám mây</span>
+        Nền tảng Giáo dục <br/><span className="text-primary">Thông minh</span>
       </h2>
       <p className="text-muted-foreground text-lg font-medium mb-12 max-w-lg leading-relaxed">
-        Dữ liệu của bạn giờ đây được đồng bộ hóa tức thì. Không còn nỗi lo mất dữ liệu khi đổi trình duyệt hay thiết bị.
+        Tác giả: Hồ A Mua - Phiên bản: 6.8 pro
       </p>
       <Button 
         onClick={onNavigate} 

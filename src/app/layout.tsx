@@ -5,7 +5,7 @@ import { FirebaseClientProvider } from '@/firebase';
 
 export const metadata: Metadata = {
   title: 'EduSmart Cloud',
-  description: 'Nền tảng Giáo dục Lưu trữ Đám mây',
+  description: 'Nền tảng Giáo dục Thông minh',
 };
 
 export default function RootLayout({
