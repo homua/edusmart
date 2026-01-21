@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ArrowLeft, Plus, Sparkles, Trash2, User as UserIcon } from 'lucide-react';
 import { Avatar, AvatarFallback } from '../ui/avatar';
+import { Badge } from '@/components/ui/badge';
 
 interface ClassRosterProps {
   currentUser: User;
