@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { db, collections } from '@/lib/firebase';
-import { collection, onSnapshot, doc, getDoc, setDoc, deleteDoc, query } from 'firebase/firestore';
+import { useUser, useCollection, useFirebase, useMemoFirebase, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
+import { collection, doc } from 'firebase/firestore';
+import { signInAnonymously } from 'firebase/auth';
 
-import type { View, Assignment, Submission, Question, QuestionType, User, UserRole, Class } from '@/lib/types';
+import type { View, Assignment, Submission, User, UserRole, Class } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
 import { parseStudentListAI } from '@/ai/flows/parse-student-list';
@@ -21,80 +22,62 @@ import ClassRoster from '@/components/teacher/class-roster';
 import StudentPortal from '@/components/student/student-portal';
 import AssignmentRunner from '@/components/student/assignment-runner';
 
+const COLLECTIONS = {
+  USERS: 'users',
+  CLASSES: 'classes',
+  ASSIGNMENTS: 'assignments',
+  SUBMISSIONS: 'submissions',
+};
+
 const MainApp: React.FC = () => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [classes, setClasses] = useState<Class[]>([]);
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { firestore, auth } = useFirebase();
   const { toast } = useToast();
+
+  const usersCollection = useMemoFirebase(() => collection(firestore, COLLECTIONS.USERS), [firestore]);
+  const classesCollection = useMemoFirebase(() => collection(firestore, COLLECTIONS.CLASSES), [firestore]);
+  const assignmentsCollection = useMemoFirebase(() => collection(firestore, COLLECTIONS.ASSIGNMENTS), [firestore]);
+  const submissionsCollection = useMemoFirebase(() => collection(firestore, COLLECTIONS.SUBMISSIONS), [firestore]);
+
+  const { data: usersData, isLoading: usersLoading } = useCollection<User>(usersCollection);
+  const { data: classesData, isLoading: classesLoading } = useCollection<Class>(classesCollection);
+  const { data: assignmentsData, isLoading: assignmentsLoading } = useCollection<Assignment>(assignmentsCollection);
+  const { data: submissionsData, isLoading: submissionsLoading } = useCollection<Submission>(submissionsCollection);
+  
+  const users = usersData || [];
+  const classes = classesData || [];
+  const assignments = assignmentsData || [];
+  const submissions = submissionsData || [];
+
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   const [view, setView] = useState<View>('HOME');
   const [currentAssignment, setCurrentAssignment] = useState<Assignment | null>(null);
-
-  // Helper functions for data operations
-  const saveData = async (collectionName: string, id: string, data: any) => {
-    try {
-      await setDoc(doc(db, collectionName, id), data, { merge: true });
-    } catch (error) {
-      console.error("Error saving data: ", error);
-      toast({ variant: "destructive", title: "Lỗi", description: "Không thể lưu dữ liệu vào Cloud." });
-    }
-  };
-
-  const deleteData = async (collectionName: string, id: string) => {
-    try {
-      await deleteDoc(doc(db, collectionName, id));
-    } catch (error) {
-      console.error("Error deleting data: ", error);
-      toast({ variant: "destructive", title: "Lỗi", description: "Không thể xóa dữ liệu từ Cloud." });
-    }
-  };
+  
+  const isLoading = usersLoading || classesLoading || assignmentsLoading || submissionsLoading;
 
   useEffect(() => {
-    const unsubscribes: (() => void)[] = [];
-    const collectionsToLoad = [collections.USERS, collections.CLASSES, collections.ASSIGNMENTS, collections.SUBMISSIONS];
-    let loadedCount = 0;
-
-    const onDataLoaded = () => {
-      loadedCount++;
-      if (loadedCount >= collectionsToLoad.length) {
-        setIsLoading(false);
-      }
-    };
-    
-    const setupSubscription = (
-      collectionName: string,
-      setter: React.Dispatch<React.SetStateAction<any[]>>
-    ) => {
-      const q = query(collection(db, collectionName));
-      const unsubscribe = onSnapshot(q, async (querySnapshot) => {
-        const list = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        if (collectionName === collections.USERS && querySnapshot.empty) {
-          const adminId = 'admin-001';
-          const adminUser: User = { id: adminId, username: 'admin', password: 'admin123', fullName: 'Quản trị viên', role: UserRole.ADMIN };
-          await saveData(collections.USERS, adminUser.id, adminUser);
-          // Listener will re-trigger with the new user, so we don't call setter here.
-          // We call onDataLoaded in the re-triggered snapshot.
-        } else {
-          setter(list);
-          onDataLoaded();
-        }
-      }, (error) => {
-        console.error(`Error fetching ${collectionName}:`, error);
-        toast({ variant: 'destructive', title: `Lỗi đồng bộ ${collectionName}`, description: 'Vui lòng kiểm tra kết nối mạng và cấu hình Firebase.' });
-        onDataLoaded(); // Mark as loaded even on error to prevent getting stuck
+    if (auth && !auth.currentUser) {
+      signInAnonymously(auth).catch(error => {
+        console.error("Anonymous sign-in failed", error);
+        toast({ variant: 'destructive', title: 'Lỗi kết nối', description: 'Không thể kết nối đến máy chủ xác thực.' });
       });
-      return unsubscribe;
-    };
+    }
+  }, [auth, toast]);
 
-    unsubscribes.push(setupSubscription(collections.USERS, setUsers));
-    unsubscribes.push(setupSubscription(collections.CLASSES, setClasses));
-    unsubscribes.push(setupSubscription(collections.ASSIGNMENTS, setAssignments));
-    unsubscribes.push(setupSubscription(collections.SUBMISSIONS, setSubmissions));
-    
+  useEffect(() => {
+    if (!isLoading && users.length === 0 && isInitialLoad) {
+      const adminId = 'admin-001';
+      const adminUser: User = { id: adminId, username: 'admin', password: 'admin123', fullName: 'Quản trị viên', role: UserRole.ADMIN };
+      const userDocRef = doc(firestore, COLLECTIONS.USERS, adminUser.id);
+      setDocumentNonBlocking(userDocRef, adminUser, { merge: true });
+    }
+    if (!isLoading) {
+      setIsInitialLoad(false);
+    }
+  }, [isLoading, users, firestore, isInitialLoad]);
+
+  useEffect(() => {
     try {
       const savedUser = localStorage.getItem('edu_session_user');
       if (savedUser) {
@@ -104,12 +87,7 @@ const MainApp: React.FC = () => {
       console.error("Could not parse user from localStorage", e);
       localStorage.removeItem('edu_session_user');
     }
-
-    return () => {
-      unsubscribes.forEach(unsub => unsub());
-    };
-  }, [toast]);
-  
+  }, []);
 
   useEffect(() => {
     if (!currentUser) {
@@ -136,7 +114,10 @@ const MainApp: React.FC = () => {
     delete userWithSanitizedPassword.password;
     setCurrentUser(userWithSanitizedPassword);
   };
-  const handleLogout = () => setCurrentUser(null);
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setView('HOME');
+  };
   
   const navigate = (newView: View, data?: any) => {
     if (data) {
@@ -146,6 +127,16 @@ const MainApp: React.FC = () => {
     }
     setView(newView);
   }
+  
+  const saveData = async (collectionName: string, id: string, data: any) => {
+    const docRef = doc(firestore, collectionName, id);
+    setDocumentNonBlocking(docRef, data, { merge: true });
+  };
+
+  const deleteData = async (collectionName: string, id: string) => {
+    const docRef = doc(firestore, collectionName, id);
+    deleteDocumentNonBlocking(docRef);
+  };
 
   const handleExportData = () => {
     const fullData = { users, classes, assignments, submissions, exportDate: new Date().toISOString() };
@@ -168,17 +159,16 @@ const MainApp: React.FC = () => {
       try {
         const data = JSON.parse(event.target?.result as string);
         if (window.confirm("CẢNH BÁO: Thao tác này sẽ ghi đè toàn bộ dữ liệu trên Cloud bằng dữ liệu từ file sao lưu. Bạn có chắc chắn muốn tiếp tục không?")) {
-          setIsLoading(true);
-          if (data.users) for (const u of data.users) await saveData(collections.USERS, u.id, u);
-          if (data.classes) for (const c of data.classes) await saveData(collections.CLASSES, c.id, c);
-          if (data.assignments) for (const a of data.assignments) await saveData(collections.ASSIGNMENTS, a.id, a);
-          if (data.submissions) for (const s of data.submissions) await saveData(collections.SUBMISSIONS, s.id, s);
+          
+          if (data.users) for (const u of data.users) await saveData(COLLECTIONS.USERS, u.id, u);
+          if (data.classes) for (const c of data.classes) await saveData(COLLECTIONS.CLASSES, c.id, c);
+          if (data.assignments) for (const a of data.assignments) await saveData(COLLECTIONS.ASSIGNMENTS, a.id, a);
+          if (data.submissions) for (const s of data.submissions) await saveData(COLLECTIONS.SUBMISSIONS, s.id, s);
           toast({ title: "Thành công", description: "Khôi phục dữ liệu từ file hoàn tất!" });
-          setIsLoading(false);
+          
         }
       } catch (err) { 
         alert("Lỗi đọc file. File không hợp lệ hoặc bị hỏng.");
-        setIsLoading(false);
       }
     };
     reader.readAsText(file);
@@ -190,7 +180,7 @@ const MainApp: React.FC = () => {
       return;
     }
     if (window.confirm("Bạn có chắc chắn muốn xóa người dùng này? Thao tác này không thể hoàn tác.")) {
-      await deleteData(collections.USERS, id);
+      await deleteData(COLLECTIONS.USERS, id);
       toast({ description: "Đã xóa người dùng." });
     }
   };
@@ -210,10 +200,10 @@ const MainApp: React.FC = () => {
               <AdminDashboard
                 users={users}
                 classes={classes}
-                onAddUser={async (u) => await saveData(collections.USERS, u.id, u)}
+                onAddUser={async (u) => await saveData(COLLECTIONS.USERS, u.id, u)}
                 onDeleteUser={handleDeleteUser}
-                onAddClass={async (c) => await saveData(collections.CLASSES, c.id, c)}
-                onDeleteClass={async (id) => await deleteData(collections.CLASSES, id)}
+                onAddClass={async (c) => await saveData(COLLECTIONS.CLASSES, c.id, c)}
+                onDeleteClass={async (id) => await deleteData(COLLECTIONS.CLASSES, id)}
                 onExport={handleExportData}
                 onImport={handleImportData}
               />
@@ -232,7 +222,7 @@ const MainApp: React.FC = () => {
                   students={users.filter(u => u.role === UserRole.STUDENT && u.classId === currentUser.classId)}
                   onCreateNew={() => navigate('CREATE_ASSIGNMENT')}
                   onViewReport={(a) => navigate('VIEW_REPORT', a)}
-                  onDelete={async (id) => await deleteData(collections.ASSIGNMENTS, id)}
+                  onDelete={async (id) => await deleteData(COLLECTIONS.ASSIGNMENTS, id)}
                   onViewRoster={() => navigate('CLASS_ROSTER')}
                 />
               );
@@ -242,7 +232,7 @@ const MainApp: React.FC = () => {
                   teacherId={currentUser.id}
                   classes={classes.filter(c => c.teacherId === currentUser.id)}
                   onSave={async (a) => {
-                    await saveData(collections.ASSIGNMENTS, a.id, a);
+                    await saveData(COLLECTIONS.ASSIGNMENTS, a.id, a);
                     navigate('TEACHER_DASHBOARD');
                   }}
                   onCancel={() => navigate('TEACHER_DASHBOARD')}
@@ -254,7 +244,7 @@ const MainApp: React.FC = () => {
                   assignment={currentAssignment}
                   submissions={submissions.filter(s => s.assignmentId === currentAssignment.id)}
                   onBack={() => navigate('TEACHER_DASHBOARD')}
-                  onUpdateSubmission={async (updated) => await saveData(collections.SUBMISSIONS, updated.id, updated)}
+                  onUpdateSubmission={async (updated) => await saveData(COLLECTIONS.SUBMISSIONS, updated.id, updated)}
                 />
               ) : null;
             case 'CLASS_ROSTER':
@@ -279,7 +269,7 @@ const MainApp: React.FC = () => {
                         role: UserRole.STUDENT,
                         classId: currentUser.classId
                       };
-                      await saveData(collections.USERS, studentId, newStudent);
+                      await saveData(COLLECTIONS.USERS, studentId, newStudent);
                     }
                   }}
                   onParseStudents={parseStudentListAI}
@@ -305,7 +295,7 @@ const MainApp: React.FC = () => {
                   studentId={currentUser.id}
                   studentName={currentUser.fullName}
                   onSubmit={async (s) => {
-                    await saveData(collections.SUBMISSIONS, s.id, s);
+                    await saveData(COLLECTIONS.SUBMISSIONS, s.id, s);
                     navigate('STUDENT_PORTAL');
                   }}
                   onCancel={() => navigate('STUDENT_PORTAL')}
@@ -319,7 +309,7 @@ const MainApp: React.FC = () => {
     return <LandingPage onNavigate={() => navigate('AUTH')} />;
   };
 
-  if (isLoading) {
+  if (isInitialLoad && isLoading) {
     return <LoadingScreen />;
   }
 
