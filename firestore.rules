@@ -132,7 +132,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isOwner(userId);
       allow list: if isSignedIn();
-      allow create: if isOwner(userId) || isAdmin() || (isTeacher() && request.resource.data.role == 'STUDENT');
+      allow create: if isOwner(userId) || isAdmin() || (isSignedIn() && request.resource.data.role == 'STUDENT');
       allow update: if isOwner(userId) || isAdmin();
       allow delete: if isOwner(userId) || isAdmin() || (isTeacher() && resource.data.classId == getUserProperty('classId'));
     }
