@@ -31,6 +31,7 @@ const COLLECTIONS = {
 
 const MainApp: React.FC = () => {
   const { firestore, auth } = useFirebase();
+  const { user: authUser, isUserLoading: isAuthUserLoading } = useUser();
   const { toast } = useToast();
 
   const usersCollection = useMemoFirebase(() => firestore ? collection(firestore, COLLECTIONS.USERS) : null, [firestore]);
@@ -54,7 +55,7 @@ const MainApp: React.FC = () => {
   const [view, setView] = useState<View>('HOME');
   const [currentAssignment, setCurrentAssignment] = useState<Assignment | null>(null);
   
-  const isLoading = usersLoading || classesLoading || assignmentsLoading || submissionsLoading;
+  const isLoading = usersLoading || classesLoading || assignmentsLoading || submissionsLoading || isAuthUserLoading;
 
   useEffect(() => {
     if (auth && !auth.currentUser) {
@@ -66,16 +67,16 @@ const MainApp: React.FC = () => {
   }, [auth, toast]);
 
   useEffect(() => {
-    if (!isLoading && users.length === 0 && isInitialLoad && firestore) {
-      const adminId = 'admin-001';
+    if (!usersLoading && !isAuthUserLoading && authUser && firestore && users.length === 0 && isInitialLoad) {
+      const adminId = authUser.uid; // Use the actual auth UID
       const adminUser: User = { id: adminId, username: 'admin', password: 'admin123', fullName: 'Quản trị viên', role: UserRole.ADMIN };
-      const userDocRef = doc(firestore, COLLECTIONS.USERS, adminUser.id);
+      const userDocRef = doc(firestore, COLLECTIONS.USERS, adminId);
       setDocumentNonBlocking(userDocRef, adminUser, { merge: true });
     }
-    if (!isLoading) {
+    if (!usersLoading && !isAuthUserLoading) {
       setIsInitialLoad(false);
     }
-  }, [isLoading, users, firestore, isInitialLoad]);
+  }, [usersLoading, isAuthUserLoading, authUser, firestore, users, isInitialLoad]);
 
   useEffect(() => {
     try {
