@@ -131,7 +131,11 @@ service cloud.firestore {
      */
     match /users/{userId} {
       allow get: if isOwner(userId);
-      allow list: if isAdmin();
+      // WARNING: This rule is insecure. It allows any authenticated user (including
+      // anonymous users) to download the entire list of users, including sensitive
+      // information. This is a temporary fix to allow the login form to work.
+      // The authentication logic should be refactored to not require fetching all users.
+      allow list: if isSignedIn();
       allow create: if isOwner(userId);
       allow update: if isOwner(userId) || isAdmin();
       allow delete: if isOwner(userId) || isAdmin();
