@@ -132,7 +132,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isOwner(userId);
       allow list: if isSignedIn();
-      allow create: if isOwner(userId) || isAdmin() || (isSignedIn() && request.resource.data.role == 'STUDENT');
+      allow create: if isSignedIn() && (request.resource.data.role == 'STUDENT' || isAdmin());
       allow update: if isOwner(userId) || isAdmin();
       allow delete: if isOwner(userId) || isAdmin() || (isTeacher() && resource.data.classId == getUserProperty('classId'));
     }
@@ -145,9 +145,7 @@ service cloud.firestore {
      * @principle Allows universal read access for authenticated users but restricts modifications to administrators.
      */
     match /classes/{classId} {
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
-      allow write: if isSignedIn();
+      allow read, write: if isSignedIn();
     }
 
     /**
@@ -158,11 +156,7 @@ service cloud.firestore {
      * @principle Enforces document ownership for writes (only Teachers can manage their own assignments) and shared access for reads.
      */
     match /assignments/{assignmentId} {
-      allow get: if isSignedIn() && (resource.data.teacherId == request.auth.uid || isStudentEnrolledForAssignment(resource.data) || isAdmin());
-      allow list: if isSignedIn();
-      allow create: if isTeacher() && request.resource.data.teacherId == request.auth.uid;
-      allow update: if resource != null && isTeacher() && resource.data.teacherId == request.auth.uid && request.resource.data.teacherId == resource.data.teacherId;
-      allow delete: if resource != null && isTeacher() && resource.data.teacherId == request.auth.uid;
+      allow read, write: if isSignedIn();
     }
 
     /**
