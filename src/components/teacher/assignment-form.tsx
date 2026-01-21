@@ -70,7 +70,7 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
   
   const handleSave = async () => {
     if (!title || !subject || classIds.length === 0 || questions.length === 0) {
-      toast({ variant: 'destructive', description: 'Vui lòng điền tiêu đề, môn học, chọn lớp và thêm ít nhất một câu hỏi.' });
+      toast({ variant: 'destructive', description: 'Vui lòng điền nội dung bài tập, môn học, chọn lớp và thêm ít nhất một câu hỏi.' });
       return;
     }
     const assignmentData: Assignment = {
@@ -88,7 +88,7 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
   
   const handleGenerateQuestions = async () => {
     if (!title || !subject) {
-      toast({ variant: 'destructive', description: 'Vui lòng nhập tiêu đề và môn học trước khi tạo bằng AI.' });
+      toast({ variant: 'destructive', description: 'Vui lòng nhập nội dung bài tập và môn học trước khi tạo bằng AI.' });
       return;
     }
     setIsGenerating(true);
@@ -132,8 +132,8 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
       <Card className="rounded-3xl shadow-lg shadow-primary/5">
         <CardContent className="p-8 space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="title" className="text-lg font-bold">Tiêu đề bài tập</Label>
-            <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ví dụ: Bài kiểm tra giữa kỳ" className="py-6 text-lg rounded-xl"/>
+            <Label htmlFor="title" className="text-lg font-bold">Nội dung bài tập</Label>
+            <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ví dụ: Phân tích nhân vật Dế Mèn trong tác phẩm Dế Mèn phiêu lưu ký" className="py-6 text-lg rounded-xl"/>
           </div>
            <div className="space-y-2">
             <Label htmlFor="subject" className="text-lg font-bold">Môn học</Label>
@@ -243,11 +243,11 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
               <DialogContent>
                   <DialogHeader>
                       <DialogTitle>Soạn câu hỏi bằng Gemini</DialogTitle>
-                      <DialogDescription>Chọn các tham số để AI tạo câu hỏi cho bạn. Tiêu đề và Môn học sẽ được lấy từ form chính.</DialogDescription>
+                      <DialogDescription>Chọn các tham số để AI tạo câu hỏi cho bạn. Nội dung bài tập và Môn học sẽ được lấy từ form chính.</DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
                       <div className="space-y-2">
-                          <Label>Tiêu đề bài tập</Label>
+                          <Label>Nội dung bài tập</Label>
                           <Input value={title} disabled />
                       </div>
                       <div className="space-y-2">
