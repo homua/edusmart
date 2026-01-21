@@ -77,8 +77,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     const newClass: Class = {
       id: `class_${Date.now()}`,
       name: className,
-      teacherId: teacherId || undefined,
     };
+
+    if (teacherId) {
+      newClass.teacherId = teacherId;
+    }
+    
     await onAddClass(newClass);
     toast({ description: 'Đã thêm lớp học mới.' });
     setClassName('');
