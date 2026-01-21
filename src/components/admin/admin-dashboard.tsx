@@ -106,7 +106,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const handleOpenEditClassModal = (cls: Class) => {
     setClassToEdit(cls);
     setEditClassName(cls.name);
-    setEditTeacherId(cls.teacherId || '');
+    setEditTeacherId(cls.teacherId || 'none');
     setClassEditModalOpen(true);
   };
 
@@ -119,7 +119,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     const updatedClass: Class = {
       ...classToEdit,
       name: editClassName.trim(),
-      teacherId: editTeacherId || undefined,
+      teacherId: editTeacherId === 'none' ? undefined : editTeacherId,
     };
     await onUpdateClass(updatedClass);
     toast({ description: 'Đã cập nhật lớp học.' });
@@ -340,7 +340,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <Select onValueChange={setEditTeacherId} value={editTeacherId}>
                     <SelectTrigger><SelectValue placeholder="Chọn giáo viên chủ nhiệm (tùy chọn)" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Không gán</SelectItem>
+                      <SelectItem value="none">Không gán</SelectItem>
                       {allTeachers.map(t => <SelectItem key={t.id} value={t.id!}>{t.fullName}</SelectItem>)}
                     </SelectContent>
                   </Select>
@@ -356,3 +356,5 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 };
 
 export default AdminDashboard;
+
+    
