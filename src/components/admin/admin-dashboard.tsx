@@ -161,6 +161,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <TableCell>
               <div className="font-medium">{user.fullName}</div>
               <div className="text-xs text-muted-foreground">@{user.username}</div>
+              {user.password && (
+                <div className="text-xs text-muted-foreground font-mono mt-1">Mật khẩu: <span className="font-bold text-foreground">{user.password}</span></div>
+              )}
             </TableCell>
             <TableCell className="text-right">
               <Button variant="ghost" size="icon" onClick={() => onDeleteUser(user.id)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full">
@@ -356,5 +359,3 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 };
 
 export default AdminDashboard;
-
-    
