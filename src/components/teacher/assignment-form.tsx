@@ -1,7 +1,8 @@
+
 "use client";
 
 import React, { useState } from 'react';
-import type { Class, Question, QuestionType, Assignment } from '@/lib/types';
+import { QuestionType, type Class, type Question, type Assignment } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
