@@ -136,8 +136,10 @@ const MainApp: React.FC = () => {
       }
     }
     
-    if (data) {
-        if (newView === 'VIEW_REPORT' || newView === 'DO_ASSIGNMENT') {
+    if (newView === 'CREATE_ASSIGNMENT') {
+        setCurrentAssignment(null);
+    } else if (data) {
+        if (newView === 'VIEW_REPORT' || newView === 'DO_ASSIGNMENT' || newView === 'EDIT_ASSIGNMENT') {
             setCurrentAssignment(data);
         }
     }
@@ -240,15 +242,18 @@ const MainApp: React.FC = () => {
                   students={users.filter(u => u.role === UserRole.STUDENT && u.classId === currentUser.classId)}
                   onCreateNew={() => navigate('CREATE_ASSIGNMENT')}
                   onViewReport={(a) => navigate('VIEW_REPORT', a)}
+                  onEdit={(a) => navigate('EDIT_ASSIGNMENT', a)}
                   onDelete={async (id) => await deleteData(COLLECTIONS.ASSIGNMENTS, id)}
                   onViewRoster={() => navigate('CLASS_ROSTER')}
                 />
               );
             case 'CREATE_ASSIGNMENT':
+            case 'EDIT_ASSIGNMENT':
               return (
                 <AssignmentForm
                   teacherId={currentUser.id}
                   classes={classes.filter(c => c.teacherId === currentUser.id)}
+                  assignmentToEdit={currentAssignment}
                   onSave={async (a) => {
                     await saveData(COLLECTIONS.ASSIGNMENTS, a.id, a);
                     navigate('TEACHER_DASHBOARD');

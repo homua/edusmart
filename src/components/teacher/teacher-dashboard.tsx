@@ -4,7 +4,7 @@ import type { User, Class, Assignment, Submission } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Users, Trash2, FileText, PieChart } from 'lucide-react';
+import { Plus, Users, Trash2, FileText, PieChart, Pencil } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
 
@@ -15,6 +15,7 @@ interface TeacherDashboardProps {
   assignments: Assignment[];
   submissions: Submission[];
   onCreateNew: () => void;
+  onEdit: (assignment: Assignment) => void;
   onViewReport: (assignment: Assignment) => void;
   onDelete: (id: string) => Promise<void>;
   onViewRoster: () => void;
@@ -27,6 +28,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   assignments,
   submissions,
   onCreateNew,
+  onEdit,
   onViewReport,
   onDelete,
   onViewRoster,
@@ -75,6 +77,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                   {isCompleted ? 'Hoàn thành' : 'Đang giao'}
                 </Badge>
                 <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="icon" className="rounded-full" onClick={() => onEdit(assignment)}><Pencil className="w-4 h-4" /></Button>
                   <Button variant="ghost" size="icon" className="rounded-full" onClick={() => onViewReport(assignment)}><PieChart className="w-4 h-4" /></Button>
                   <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10 rounded-full" onClick={() => onDelete(assignment.id)}><Trash2 className="w-4 h-4" /></Button>
                 </div>

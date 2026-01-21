@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { QuestionType, type Class, type Question, type Assignment } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,9 +20,10 @@ interface AssignmentFormProps {
   classes: Class[];
   onSave: (assignment: Assignment) => Promise<void>;
   onCancel: () => void;
+  assignmentToEdit?: Assignment | null;
 }
 
-const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onSave, onCancel }) => {
+const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onSave, onCancel, assignmentToEdit }) => {
   const { toast } = useToast();
   const [title, setTitle] = useState('');
   const [subject, setSubject] = useState('');
@@ -36,11 +37,20 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
   const [aiQuestionType, setAiQuestionType] = useState<QuestionType>(QuestionType.MULTIPLE_CHOICE);
   const [aiQuestionCount, setAiQuestionCount] = useState(3);
 
+  useEffect(() => {
+    if (assignmentToEdit) {
+      setTitle(assignmentToEdit.title);
+      setSubject(assignmentToEdit.subject);
+      setClassIds(assignmentToEdit.classIds);
+      setQuestions(assignmentToEdit.questions);
+    }
+  }, [assignmentToEdit]);
+
   const addQuestion = () => {
     const newQuestion: Question = {
       id: `q_${Date.now()}`,
       text: '',
-      type: 'TEXT' as QuestionType.TEXT,
+      type: QuestionType.TEXT,
       options: [],
       correctAnswer: '',
       points: 10,
@@ -63,17 +73,17 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
       toast({ variant: 'destructive', description: 'Vui lòng điền tiêu đề, môn học, chọn lớp và thêm ít nhất một câu hỏi.' });
       return;
     }
-    const newAssignment: Assignment = {
-      id: `asg_${Date.now()}`,
+    const assignmentData: Assignment = {
+      id: assignmentToEdit ? assignmentToEdit.id : `asg_${Date.now()}`,
       title,
       subject,
       teacherId,
       classIds,
       questions,
-      createdAt: new Date().toISOString(),
+      createdAt: assignmentToEdit ? assignmentToEdit.createdAt : new Date().toISOString(),
     };
-    await onSave(newAssignment);
-    toast({ title: "Thành công!", description: "Đã tạo bài tập mới." });
+    await onSave(assignmentData);
+    toast({ title: "Thành công!", description: assignmentToEdit ? "Đã cập nhật bài tập." : "Đã tạo bài tập mới." });
   };
   
   const handleGenerateQuestions = async () => {
@@ -113,8 +123,8 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
       <div className="flex items-center gap-4">
         <Button onClick={onCancel} variant="outline" size="icon" className="h-12 w-12 rounded-full"><ArrowLeft /></Button>
         <div>
-          <h1 className="text-3xl font-black text-foreground">Tạo bài tập mới</h1>
-          <p className="text-muted-foreground">Soạn câu hỏi và giao bài cho lớp của bạn.</p>
+          <h1 className="text-3xl font-black text-foreground">{assignmentToEdit ? 'Chỉnh sửa bài tập' : 'Tạo bài tập mới'}</h1>
+          <p className="text-muted-foreground">{assignmentToEdit ? 'Cập nhật câu hỏi và chi tiết bài tập.' : 'Soạn câu hỏi và giao bài cho lớp của bạn.'}</p>
         </div>
       </div>
 
