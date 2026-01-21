@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { User, Class, UserRole } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Trash2, Upload, Download, UserPlus } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Separator } from '@/components/ui/separator';
 
 interface AdminDashboardProps {
@@ -49,6 +48,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Class form state
   const [className, setClassName] = useState('');
   const [teacherId, setTeacherId] = useState('');
+
+  // Student list state
+  const [selectedClassId, setSelectedClassId] = useState<string>('');
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,6 +108,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     return acc;
   }, {} as Record<string, User[]>);
   const unassignedStudents = users.filter(s => s.role === 'STUDENT' && (!s.classId || !classes.some(c => c.id === s.classId)));
+
+  useEffect(() => {
+    const selectionIsValid = classes.some(c => c.id === selectedClassId);
+
+    if (!selectionIsValid && selectedClassId !== 'unassigned') {
+      if (classes.length > 0) {
+        setSelectedClassId(classes[0].id);
+      } else {
+        setSelectedClassId('unassigned');
+      }
+    }
+  }, [classes, selectedClassId]);
 
   const UserTable: React.FC<{ users: User[]; onDeleteUser: (id: string) => Promise<void>; }> = ({ users, onDeleteUser }) => (
     <Table>
@@ -190,25 +204,31 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <TabsTrigger value="teachers">Giáo viên</TabsTrigger>
                 <TabsTrigger value="admins">Quản trị viên</TabsTrigger>
               </TabsList>
-              <TabsContent value="students" className="mt-4">
-                <Accordion type="single" collapsible className="w-full">
-                  {classes.map(cls => (
-                    <AccordionItem value={cls.id} key={cls.id}>
-                      <AccordionTrigger>{cls.name} ({studentsByClass[cls.id]?.length || 0} học sinh)</AccordionTrigger>
-                      <AccordionContent>
-                        <UserTable users={studentsByClass[cls.id] || []} onDeleteUser={onDeleteUser} />
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                  {unassignedStudents.length > 0 && (
-                     <AccordionItem value="unassigned">
-                      <AccordionTrigger className="text-destructive">Chưa phân lớp ({unassignedStudents.length} học sinh)</AccordionTrigger>
-                      <AccordionContent>
-                        <UserTable users={unassignedStudents} onDeleteUser={onDeleteUser} />
-                      </AccordionContent>
-                    </AccordionItem>
-                  )}
-                </Accordion>
+              <TabsContent value="students" className="mt-4 space-y-4">
+                <Select value={selectedClassId} onValueChange={setSelectedClassId}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Chọn một lớp..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {classes.map((cls) => (
+                      <SelectItem key={cls.id} value={cls.id}>
+                        {cls.name} ({studentsByClass[cls.id]?.length || 0} học sinh)
+                      </SelectItem>
+                    ))}
+                    {(unassignedStudents.length > 0 || classes.length === 0) && (
+                       <SelectItem value="unassigned">
+                         Chưa phân lớp ({unassignedStudents.length} học sinh)
+                       </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+                
+                {selectedClassId && (
+                  <UserTable 
+                    users={selectedClassId === 'unassigned' ? unassignedStudents : studentsByClass[selectedClassId] || []} 
+                    onDeleteUser={onDeleteUser}
+                  />
+                )}
               </TabsContent>
               <TabsContent value="teachers" className="mt-4 space-y-4">
                  <div>
@@ -285,3 +305,5 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 };
 
 export default AdminDashboard;
+
+    
