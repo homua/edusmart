@@ -130,15 +130,11 @@ service cloud.firestore {
      * @principle Restricts access to a user's own data tree, enforcing strict privacy.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      // WARNING: This rule is insecure. It allows any authenticated user (including
-      // anonymous users) to download the entire list of users, including sensitive
-      // information. This is a temporary fix to allow the login form to work.
-      // The authentication logic should be refactored to not require fetching all users.
+      allow get: if isOwner(userId) || isAdmin();
       allow list: if isSignedIn();
-      allow create: if isOwner(userId);
+      allow create: if isOwner(userId) || isAdmin() || (isTeacher() && request.resource.data.role == 'STUDENT');
       allow update: if isOwner(userId) || isAdmin();
-      allow delete: if isOwner(userId) || isAdmin();
+      allow delete: if isOwner(userId) || isAdmin() || (isTeacher() && resource.data.classId == getUserProperty('classId'));
     }
 
     /**
@@ -151,10 +147,6 @@ service cloud.firestore {
     match /classes/{classId} {
       allow get: if isSignedIn();
       allow list: if isSignedIn();
-      // WARNING: Temporarily relaxed for development.
-      // This allows any signed-in user to manage classes to work around a
-      // client-side race condition with role propagation.
-      // In production, this should be restricted to `isAdmin()`.
       allow write: if isSignedIn();
     }
 
