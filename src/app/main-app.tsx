@@ -5,7 +5,7 @@ import { useUser, useCollection, useFirebase, useMemoFirebase, setDocumentNonBlo
 import { collection, doc } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
 
-import type { View, Assignment, Submission, User, UserRole, Class } from '@/lib/types';
+import { UserRole, type View, type Assignment, type Submission, type User, type Class } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
 import { parseStudentListAI } from '@/ai/flows/parse-student-list';
@@ -33,10 +33,10 @@ const MainApp: React.FC = () => {
   const { firestore, auth } = useFirebase();
   const { toast } = useToast();
 
-  const usersCollection = useMemoFirebase(() => collection(firestore, COLLECTIONS.USERS), [firestore]);
-  const classesCollection = useMemoFirebase(() => collection(firestore, COLLECTIONS.CLASSES), [firestore]);
-  const assignmentsCollection = useMemoFirebase(() => collection(firestore, COLLECTIONS.ASSIGNMENTS), [firestore]);
-  const submissionsCollection = useMemoFirebase(() => collection(firestore, COLLECTIONS.SUBMISSIONS), [firestore]);
+  const usersCollection = useMemoFirebase(() => firestore ? collection(firestore, COLLECTIONS.USERS) : null, [firestore]);
+  const classesCollection = useMemoFirebase(() => firestore ? collection(firestore, COLLECTIONS.CLASSES) : null, [firestore]);
+  const assignmentsCollection = useMemoFirebase(() => firestore ? collection(firestore, COLLECTIONS.ASSIGNMENTS) : null, [firestore]);
+  const submissionsCollection = useMemoFirebase(() => firestore ? collection(firestore, COLLECTIONS.SUBMISSIONS) : null, [firestore]);
 
   const { data: usersData, isLoading: usersLoading } = useCollection<User>(usersCollection);
   const { data: classesData, isLoading: classesLoading } = useCollection<Class>(classesCollection);
@@ -66,7 +66,7 @@ const MainApp: React.FC = () => {
   }, [auth, toast]);
 
   useEffect(() => {
-    if (!isLoading && users.length === 0 && isInitialLoad) {
+    if (!isLoading && users.length === 0 && isInitialLoad && firestore) {
       const adminId = 'admin-001';
       const adminUser: User = { id: adminId, username: 'admin', password: 'admin123', fullName: 'Quản trị viên', role: UserRole.ADMIN };
       const userDocRef = doc(firestore, COLLECTIONS.USERS, adminUser.id);
@@ -120,6 +120,12 @@ const MainApp: React.FC = () => {
   };
   
   const navigate = (newView: View, data?: any) => {
+    if (newView === 'AUTH') {
+      if (currentUser) {
+        return;
+      }
+    }
+    
     if (data) {
         if (newView === 'VIEW_REPORT' || newView === 'DO_ASSIGNMENT') {
             setCurrentAssignment(data);
@@ -129,11 +135,13 @@ const MainApp: React.FC = () => {
   }
   
   const saveData = async (collectionName: string, id: string, data: any) => {
+    if (!firestore) return;
     const docRef = doc(firestore, collectionName, id);
     setDocumentNonBlocking(docRef, data, { merge: true });
   };
 
   const deleteData = async (collectionName: string, id: string) => {
+    if (!firestore) return;
     const docRef = doc(firestore, collectionName, id);
     deleteDocumentNonBlocking(docRef);
   };
