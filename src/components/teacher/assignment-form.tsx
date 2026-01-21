@@ -87,13 +87,14 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
   };
   
   const handleGenerateQuestions = async () => {
-    if (!subject) {
-      toast({ variant: 'destructive', description: 'Vui lòng nhập môn học trước khi tạo bằng AI.' });
+    if (!title || !subject) {
+      toast({ variant: 'destructive', description: 'Vui lòng nhập tiêu đề và môn học trước khi tạo bằng AI.' });
       return;
     }
     setIsGenerating(true);
     try {
       const input: GenerateQuestionsInput = {
+        title: title,
         subject: subject,
         difficulty: aiDifficulty,
         questionType: aiQuestionType,
@@ -242,9 +243,13 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
               <DialogContent>
                   <DialogHeader>
                       <DialogTitle>Soạn câu hỏi bằng Gemini</DialogTitle>
-                      <DialogDescription>Chọn các tham số để AI tạo câu hỏi cho bạn. Môn học sẽ được lấy từ form chính.</DialogDescription>
+                      <DialogDescription>Chọn các tham số để AI tạo câu hỏi cho bạn. Tiêu đề và Môn học sẽ được lấy từ form chính.</DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                          <Label>Tiêu đề bài tập</Label>
+                          <Input value={title} disabled />
+                      </div>
                       <div className="space-y-2">
                           <Label>Môn học</Label>
                           <Input value={subject} disabled />
@@ -277,7 +282,7 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
                   </div>
                   <DialogFooter>
                       <Button variant="ghost" onClick={() => setAiModalOpen(false)}>Hủy</Button>
-                      <Button onClick={handleGenerateQuestions} disabled={isGenerating || !subject}>
+                      <Button onClick={handleGenerateQuestions} disabled={isGenerating || !subject || !title}>
                           {isGenerating ? "Đang tạo..." : "Tạo câu hỏi"}
                       </Button>
                   </DialogFooter>

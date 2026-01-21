@@ -15,6 +15,7 @@ const DifficultyEnum = z.enum(['Dễ', 'Trung bình', 'Khó']);
 const QuestionTypeEnum = z.enum(['MULTIPLE_CHOICE', 'TEXT']);
 
 const GenerateQuestionsInputSchema = z.object({
+  title: z.string().describe('The title of the assignment, which provides context for the questions.'),
   subject: z.string().describe('The subject of the questions to generate.'),
   difficulty: DifficultyEnum.describe('The difficulty level of the questions.'),
   questionType: QuestionTypeEnum.describe('The type of questions to generate.'),
@@ -44,7 +45,8 @@ const generateQuestionsPrompt = ai.definePrompt({
   input: {schema: GenerateQuestionsInputSchema},
   output: {schema: GenerateQuestionsOutputSchema},
   prompt: `Bạn là một trợ lý chuyên gia thiết kế chương trình giảng dạy, có nhiệm vụ tạo ra các câu hỏi cho bài tập.
-Hãy tạo {{count}} câu hỏi về chủ đề {{subject}} với độ khó {{difficulty}}.
+Nội dung của bài tập xoay quanh tiêu đề: "{{title}}".
+Hãy tạo {{count}} câu hỏi về chủ đề {{subject}} với độ khó {{difficulty}} liên quan đến tiêu đề trên.
 Loại câu hỏi phải là: {{questionType}}.
 
 - Nếu loại là 'MULTIPLE_CHOICE', hãy cung cấp 4 lựa chọn và chỉ định đáp án đúng. Các lựa chọn phải khác biệt và hợp lý.
