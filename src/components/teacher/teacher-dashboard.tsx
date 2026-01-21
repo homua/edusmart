@@ -55,7 +55,9 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
               <CardHeader>
                 <CardTitle className="leading-tight">{assignment.title}</CardTitle>
                 <CardDescription>
-                  Tạo ngày: {format(parseISO(assignment.createdAt), "d 'tháng' M, yyyy", { locale: vi })}
+                  <span className="font-semibold text-primary">{assignment.subject}</span>
+                  <span className="mx-2 text-muted-foreground/50">|</span>
+                  <span>Tạo ngày: {format(parseISO(assignment.createdAt), "d 'tháng' M, yyyy", { locale: vi })}</span>
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-grow space-y-2">

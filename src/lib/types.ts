@@ -36,6 +36,7 @@ export interface Question {
 export interface Assignment {
   id: string;
   title: string;
+  subject: string;
   teacherId: string;
   classIds: string[];
   questions: Question[];

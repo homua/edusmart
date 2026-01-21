@@ -9,8 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Trash2, ArrowLeft, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, ChevronDown, Bot } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { generateQuestionsAI, type GenerateQuestionsInput } from '@/ai/flows/generate-questions-flow';
 
 interface AssignmentFormProps {
   teacherId: string;
@@ -22,8 +24,16 @@ interface AssignmentFormProps {
 const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onSave, onCancel }) => {
   const { toast } = useToast();
   const [title, setTitle] = useState('');
+  const [subject, setSubject] = useState('');
   const [classIds, setClassIds] = useState<string[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
+
+  // AI Generation State
+  const [isAiModalOpen, setAiModalOpen] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [aiDifficulty, setAiDifficulty] = useState<'Dễ' | 'Trung bình' | 'Khó'>('Trung bình');
+  const [aiQuestionType, setAiQuestionType] = useState<QuestionType>(QuestionType.MULTIPLE_CHOICE);
+  const [aiQuestionCount, setAiQuestionCount] = useState(3);
 
   const addQuestion = () => {
     const newQuestion: Question = {
@@ -48,13 +58,14 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
   };
   
   const handleSave = async () => {
-    if (!title || classIds.length === 0 || questions.length === 0) {
-      toast({ variant: 'destructive', description: 'Vui lòng điền tiêu đề, chọn lớp và thêm ít nhất một câu hỏi.' });
+    if (!title || !subject || classIds.length === 0 || questions.length === 0) {
+      toast({ variant: 'destructive', description: 'Vui lòng điền tiêu đề, môn học, chọn lớp và thêm ít nhất một câu hỏi.' });
       return;
     }
     const newAssignment: Assignment = {
       id: `asg_${Date.now()}`,
       title,
+      subject,
       teacherId,
       classIds,
       questions,
@@ -62,6 +73,31 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
     };
     await onSave(newAssignment);
     toast({ title: "Thành công!", description: "Đã tạo bài tập mới." });
+  };
+  
+  const handleGenerateQuestions = async () => {
+    if (!subject) {
+      toast({ variant: 'destructive', description: 'Vui lòng nhập môn học trước khi tạo bằng AI.' });
+      return;
+    }
+    setIsGenerating(true);
+    try {
+      const input: GenerateQuestionsInput = {
+        subject: subject,
+        difficulty: aiDifficulty,
+        questionType: aiQuestionType,
+        count: aiQuestionCount,
+      };
+      const newQuestions = await generateQuestionsAI(input);
+      setQuestions(prev => [...prev, ...newQuestions]);
+      toast({ title: 'Thành công!', description: `Đã tạo ${newQuestions.length} câu hỏi bằng AI.` });
+      setAiModalOpen(false);
+    } catch (error) {
+      console.error(error);
+      toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể tạo câu hỏi bằng AI. Vui lòng thử lại.' });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const selectedClassesText = classIds.length > 0
@@ -86,6 +122,10 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
           <div className="space-y-2">
             <Label htmlFor="title" className="text-lg font-bold">Tiêu đề bài tập</Label>
             <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ví dụ: Bài kiểm tra giữa kỳ" className="py-6 text-lg rounded-xl"/>
+          </div>
+           <div className="space-y-2">
+            <Label htmlFor="subject" className="text-lg font-bold">Môn học</Label>
+            <Input id="subject" value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Ví dụ: Ngữ Văn" className="py-6 text-lg rounded-xl"/>
           </div>
           <div className="space-y-2">
             <Label htmlFor="classes" className="text-lg font-bold">Giao cho lớp</Label>
@@ -135,7 +175,7 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
                 <Select value={q.type} onValueChange={(v) => updateQuestion(index, { type: v as QuestionType })}>
                     <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="TEXT">Trả lời ngắn</SelectItem>
+                        <SelectItem value="TEXT">Tự luận</SelectItem>
                         <SelectItem value="MULTIPLE_CHOICE">Trắc nghiệm</SelectItem>
                     </SelectContent>
                 </Select>
@@ -148,11 +188,18 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
               <div className="space-y-4 col-span-2">
                 <Label>Các lựa chọn</Label>
                 {q.options?.map((opt, optIndex) => (
-                  <Input key={optIndex} value={opt} onChange={e => {
-                      const newOptions = [...(q.options || [])];
-                      newOptions[optIndex] = e.target.value;
-                      updateQuestion(index, { options: newOptions });
-                  }} placeholder={`Lựa chọn ${optIndex + 1}`} className="rounded-xl" />
+                  <div key={optIndex} className="flex items-center gap-2">
+                    <Input value={opt} onChange={e => {
+                        const newOptions = [...(q.options || [])];
+                        newOptions[optIndex] = e.target.value;
+                        updateQuestion(index, { options: newOptions });
+                    }} placeholder={`Lựa chọn ${optIndex + 1}`} className="rounded-xl" />
+                     <Button variant="ghost" size="icon" onClick={() => {
+                        const newOptions = [...(q.options || [])];
+                        newOptions.splice(optIndex, 1);
+                        updateQuestion(index, { options: newOptions });
+                     }} className="text-muted-foreground hover:text-destructive rounded-full"><Trash2 className="w-4 h-4" /></Button>
+                  </div>
                 ))}
                  <Button variant="outline" size="sm" onClick={() => updateQuestion(index, { options: [...(q.options || []), ''] })}>Thêm lựa chọn</Button>
               </div>
@@ -175,7 +222,57 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
       ))}
 
       <div className="flex justify-between items-center">
-        <Button onClick={addQuestion} variant="outline" className="rounded-full py-6"><Plus className="mr-2" /> Thêm câu hỏi</Button>
+        <div className="flex gap-2">
+          <Button onClick={addQuestion} variant="outline" className="rounded-full py-6"><Plus className="mr-2" /> Thêm câu hỏi</Button>
+          <Dialog open={isAiModalOpen} onOpenChange={setAiModalOpen}>
+              <DialogTrigger asChild>
+                  <Button variant="outline" className="rounded-full py-6"><Bot className="mr-2" /> Soạn bằng AI</Button>
+              </DialogTrigger>
+              <DialogContent>
+                  <DialogHeader>
+                      <DialogTitle>Soạn câu hỏi bằng Gemini</DialogTitle>
+                      <DialogDescription>Chọn các tham số để AI tạo câu hỏi cho bạn. Môn học sẽ được lấy từ form chính.</DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                          <Label>Môn học</Label>
+                          <Input value={subject} disabled />
+                      </div>
+                      <div className="space-y-2">
+                          <Label>Độ khó</Label>
+                          <Select value={aiDifficulty} onValueChange={(v) => setAiDifficulty(v as any)}>
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                  <SelectItem value="Dễ">Dễ</SelectItem>
+                                  <SelectItem value="Trung bình">Trung bình</SelectItem>
+                                  <SelectItem value="Khó">Khó</SelectItem>
+                              </SelectContent>
+                          </Select>
+                      </div>
+                      <div className="space-y-2">
+                          <Label>Loại câu hỏi</Label>
+                          <Select value={aiQuestionType} onValueChange={(v) => setAiQuestionType(v as any)}>
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                  <SelectItem value="MULTIPLE_CHOICE">Trắc nghiệm</SelectItem>
+                                  <SelectItem value="TEXT">Tự luận</SelectItem>
+                              </SelectContent>
+                          </Select>
+                      </div>
+                      <div className="space-y-2">
+                          <Label>Số lượng câu hỏi</Label>
+                          <Input type="number" value={aiQuestionCount} onChange={e => setAiQuestionCount(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))} min="1" max="10"/>
+                      </div>
+                  </div>
+                  <DialogFooter>
+                      <Button variant="ghost" onClick={() => setAiModalOpen(false)}>Hủy</Button>
+                      <Button onClick={handleGenerateQuestions} disabled={isGenerating || !subject}>
+                          {isGenerating ? "Đang tạo..." : "Tạo câu hỏi"}
+                      </Button>
+                  </DialogFooter>
+              </DialogContent>
+          </Dialog>
+        </div>
         <div className="flex gap-4">
             <Button onClick={onCancel} variant="ghost" className="rounded-full py-6">Hủy</Button>
             <Button onClick={handleSave} className="rounded-full py-6 px-8 text-lg font-bold">Lưu bài tập</Button>
