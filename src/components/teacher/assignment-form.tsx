@@ -137,7 +137,22 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
           </div>
            <div className="space-y-2">
             <Label htmlFor="subject" className="text-lg font-bold">Môn học</Label>
-            <Input id="subject" value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Ví dụ: Ngữ Văn" className="py-6 text-lg rounded-xl"/>
+            <Select value={subject} onValueChange={setSubject}>
+                <SelectTrigger id="subject" className="py-6 text-lg rounded-xl">
+                    <SelectValue placeholder="Chọn môn học" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="Toán">Toán</SelectItem>
+                    <SelectItem value="Văn">Văn</SelectItem>
+                    <SelectItem value="Tiếng Anh">Tiếng Anh</SelectItem>
+                    <SelectItem value="Khoa học Tự nhiên">Khoa học Tự nhiên</SelectItem>
+                    <SelectItem value="Lịch sử và Địa lí">Lịch sử và Địa lí</SelectItem>
+                    <SelectItem value="Giáo dục công dân">Giáo dục công dân</SelectItem>
+                    <SelectItem value="Công nghệ">Công nghệ</SelectItem>
+                    <SelectItem value="Tin học">Tin học</SelectItem>
+                    <SelectItem value="Âm nhạc">Âm nhạc</SelectItem>
+                </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <Label htmlFor="classes" className="text-lg font-bold">Giao cho lớp</Label>
