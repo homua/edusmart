@@ -111,10 +111,19 @@ const MainApp: React.FC = () => {
   }, [currentUser, view]);
 
   const handleLogin = (user: User) => {
-    const userWithSanitizedPassword = { ...user };
-    delete userWithSanitizedPassword.password;
-    setCurrentUser(userWithSanitizedPassword);
+    const userForSession = { ...user };
+    delete userForSession.password;
+
+    if (userForSession.role === UserRole.TEACHER) {
+      const assignedClass = classes.find(c => c.teacherId === userForSession.id);
+      if (assignedClass) {
+        userForSession.classId = assignedClass.id;
+      }
+    }
+    
+    setCurrentUser(userForSession);
   };
+
   const handleLogout = () => {
     setCurrentUser(null);
     setView('HOME');
