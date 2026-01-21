@@ -89,21 +89,21 @@ service cloud.firestore {
      * Checks if the authenticated user has the 'Admin' role.
      */
     function isAdmin() {
-      return isSignedIn() && getUserProperty('role') == 'Admin';
+      return isSignedIn() && getUserProperty('role') == 'ADMIN';
     }
 
     /**
      * Checks if the authenticated user has the 'Teacher' role.
      */
     function isTeacher() {
-      return isSignedIn() && getUserProperty('role') == 'Teacher';
+      return isSignedIn() && getUserProperty('role') == 'TEACHER';
     }
 
     /**
      * Checks if the authenticated user has the 'Student' role.
      */
     function isStudent() {
-      return isSignedIn() && getUserProperty('role') == 'Student';
+      return isSignedIn() && getUserProperty('role') == 'STUDENT';
     }
 
     /**
