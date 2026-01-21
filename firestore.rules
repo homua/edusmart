@@ -130,7 +130,7 @@ service cloud.firestore {
      * @principle Restricts access to a user's own data tree, enforcing strict privacy.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId) || isAdmin();
+      allow get: if isOwner(userId);
       allow list: if isSignedIn();
       allow create: if isOwner(userId) || isAdmin() || (isTeacher() && request.resource.data.role == 'STUDENT');
       allow update: if isOwner(userId) || isAdmin();
