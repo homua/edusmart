@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -152,14 +153,28 @@ const MainApp: React.FC = () => {
     setView(newView);
   }
   
-  const saveData = async (collectionName: string, id: string, data: any) => {
-    if (!firestore) return;
+  const saveData = (collectionName: string, id: string, data: any): Promise<void> => {
+    if (!firestore) {
+       toast({
+            variant: 'destructive',
+            title: 'Lỗi hệ thống',
+            description: 'Không thể kết nối tới cơ sở dữ liệu. Vui lòng tải lại trang.'
+        });
+       return Promise.reject(new Error("Firestore service not available."));
+    }
     const docRef = doc(firestore, collectionName, id);
-    setDocumentNonBlocking(docRef, data, { merge: true });
+    return setDocumentNonBlocking(docRef, data, { merge: true });
   };
 
-  const deleteData = (collectionName: string, id: string) => {
-    if (!firestore) return Promise.resolve();
+  const deleteData = (collectionName: string, id: string): Promise<void> => {
+    if (!firestore) {
+       toast({
+            variant: 'destructive',
+            title: 'Lỗi hệ thống',
+            description: 'Không thể kết nối tới cơ sở dữ liệu. Vui lòng tải lại trang.'
+        });
+      return Promise.reject(new Error('Firestore service not available.'));
+    }
     const docRef = doc(firestore, collectionName, id);
     return deleteDocumentNonBlocking(docRef);
   };
@@ -395,3 +410,5 @@ const MainApp: React.FC = () => {
 };
 
 export default MainApp;
+
+    
