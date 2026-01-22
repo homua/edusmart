@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { ArrowLeft, Plus, Sparkles, Trash2, User as UserIcon } from 'lucide-react';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface ClassRosterProps {
   currentUser: User;
@@ -18,7 +19,8 @@ interface ClassRosterProps {
   students: User[];
   onBack: () => void;
   onAddStudents: (names: string[]) => Promise<void>;
-  onDeleteStudent: (id: string) => Promise<void>;
+  onDeleteStudent: (student: User) => Promise<void>;
+  onDeleteStudents: (ids: string[]) => Promise<void>;
   onParseStudents: (bulkInput: string) => Promise<string[]>;
 }
 
@@ -29,6 +31,7 @@ const ClassRoster: React.FC<ClassRosterProps> = ({
   onBack,
   onAddStudents,
   onDeleteStudent,
+  onDeleteStudents,
   onParseStudents,
 }) => {
   const { toast } = useToast();
@@ -40,6 +43,7 @@ const ClassRoster: React.FC<ClassRosterProps> = ({
   const [bulkInput, setBulkInput] = useState('');
   const [parsedNames, setParsedNames] = useState<string[]>([]);
   const [isParsing, setIsParsing] = useState(false);
+  const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
 
   const handleAddSingleStudent = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,6 +80,13 @@ const ClassRoster: React.FC<ClassRosterProps> = ({
     setParsedNames([]);
     setIsParsing(false);
   }
+
+  const handleBulkDelete = () => {
+    if (window.confirm(`Bạn có chắc chắn muốn xóa ${selectedStudents.length} học sinh đã chọn? Thao tác này không thể hoàn tác.`)) {
+      onDeleteStudents(selectedStudents);
+      setSelectedStudents([]);
+    }
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -154,26 +165,62 @@ const ClassRoster: React.FC<ClassRosterProps> = ({
       </Card>
 
       <Card className="rounded-3xl shadow-lg shadow-primary/5">
-        <CardHeader><CardTitle>Danh sách lớp</CardTitle></CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {students.map(s => (
-            <div key={s.id} className="p-4 bg-background rounded-2xl flex justify-between items-center group transition-all border-2 border-transparent hover:border-primary/20 hover:shadow-md">
-              <div className="flex items-center gap-4">
-                <Avatar><AvatarFallback><UserIcon /></AvatarFallback></Avatar>
-                <div>
-                  <h4 className="font-bold text-foreground">{s.fullName}</h4>
-                  <span className="text-xs text-muted-foreground font-mono">@{s.username}</span>
-                  <div className="text-xs text-muted-foreground font-mono mt-1">Mật khẩu: <span className="font-bold text-foreground">{s.password}</span></div>
-                </div>
-              </div>
-              <Button onClick={() => onDeleteStudent(s.id)} variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
-          {students.length === 0 && (
-            <p className="col-span-full text-center text-muted-foreground py-8">Chưa có học sinh nào trong lớp.</p>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Danh sách lớp</CardTitle>
+          {selectedStudents.length > 0 && (
+            <Button variant="destructive" onClick={handleBulkDelete}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              Xóa ({selectedStudents.length})
+            </Button>
           )}
+        </CardHeader>
+        <CardContent className="p-0">
+          {students.length > 0 && (
+            <div className="flex items-center p-4 border-b">
+              <Checkbox
+                id="select-all"
+                checked={selectedStudents.length > 0 && selectedStudents.length === students.length}
+                onCheckedChange={(checked) =>
+                  setSelectedStudents(checked ? students.map((s) => s.id) : [])
+                }
+              />
+              <label
+                htmlFor="select-all"
+                className="ml-3 text-sm font-medium"
+              >
+                Chọn tất cả ({students.length} học sinh)
+              </label>
+            </div>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+            {students.map(s => (
+              <div key={s.id} className="p-4 bg-background rounded-2xl flex justify-between items-center group transition-all border-2 border-transparent hover:border-primary/20 hover:shadow-md has-[:checked]:border-primary/50 has-[:checked]:bg-primary/5">
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    id={`student-${s.id}`}
+                    checked={selectedStudents.includes(s.id)}
+                    onCheckedChange={(checked) => {
+                      setSelectedStudents(prev => checked ? [...prev, s.id] : prev.filter(id => id !== s.id));
+                    }}
+                  />
+                  <label htmlFor={`student-${s.id}`} className="flex items-center gap-4 cursor-pointer">
+                    <Avatar><AvatarFallback><UserIcon /></AvatarFallback></Avatar>
+                    <div>
+                      <h4 className="font-bold text-foreground">{s.fullName}</h4>
+                      <span className="text-xs text-muted-foreground font-mono">@{s.username}</span>
+                      <div className="text-xs text-muted-foreground font-mono mt-1">Mật khẩu: <span className="font-bold text-foreground">{s.password}</span></div>
+                    </div>
+                  </label>
+                </div>
+                <Button onClick={() => onDeleteStudent(s)} variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+            {students.length === 0 && (
+              <p className="col-span-full text-center text-muted-foreground py-8">Chưa có học sinh nào trong lớp.</p>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -18,7 +18,7 @@ interface AdminDashboardProps {
   users: User[];
   classes: Class[];
   onAddUser: (user: User) => Promise<void>;
-  onDeleteUser: (id: string) => Promise<void>;
+  onDeleteUser: (user: User) => Promise<void>;
   onAddClass: (cls: Class) => Promise<void>;
   onUpdateClass: (cls: Class) => Promise<void>;
   onDeleteClass: (id: string) => Promise<void>;
@@ -153,7 +153,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   }, [classes, selectedClassId]);
 
-  const UserTable: React.FC<{ users: User[]; onDeleteUser: (id: string) => Promise<void>; }> = ({ users, onDeleteUser }) => (
+  const UserTable: React.FC<{ users: User[]; onDeleteUser: (user: User) => Promise<void>; }> = ({ users, onDeleteUser }) => (
     <Table>
       <TableBody>
         {users.map(user => (
@@ -166,7 +166,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
               )}
             </TableCell>
             <TableCell className="text-right">
-              <Button variant="ghost" size="icon" onClick={() => onDeleteUser(user.id)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full">
+              <Button variant="ghost" size="icon" onClick={() => onDeleteUser(user)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full">
                 <Trash2 className="h-4 w-4" />
               </Button>
             </TableCell>

@@ -158,7 +158,7 @@ const MainApp: React.FC = () => {
     setDocumentNonBlocking(docRef, data, { merge: true });
   };
 
-  const deleteData = async (collectionName: string, id: string) => {
+  const deleteData = (collectionName: string, id: string) => {
     if (!firestore) return;
     const docRef = doc(firestore, collectionName, id);
     deleteDocumentNonBlocking(docRef);
@@ -200,15 +200,33 @@ const MainApp: React.FC = () => {
     reader.readAsText(file);
   };
 
-  const handleDeleteUser = async (id: string) => {
+  const handleDeleteUser = async (userToDelete: User) => {
+    const { id, role } = userToDelete;
+
     if (currentUser?.id === id) {
       toast({ variant: "destructive", title: "Lỗi", description: "Bạn không thể tự xóa tài khoản của mình."});
       return;
     }
-    if (window.confirm("Bạn có chắc chắn muốn xóa người dùng này? Thao tác này không thể hoàn tác.")) {
-      await deleteData(COLLECTIONS.USERS, id);
-      toast({ description: "Đã xóa người dùng." });
+    
+    if (role === UserRole.TEACHER) {
+      const isHeadTeacher = classes.some(c => c.teacherId === id);
+      if (isHeadTeacher) {
+        toast({ variant: "destructive", title: "Không thể xóa", description: "Giáo viên này đang là chủ nhiệm một lớp. Vui lòng bỏ gán chủ nhiệm trước khi xóa."});
+        return;
+      }
     }
+
+    if (window.confirm(`Bạn có chắc chắn muốn xóa người dùng "${userToDelete.fullName}"? Thao tác này không thể hoàn tác.`)) {
+      deleteData(COLLECTIONS.USERS, id);
+      toast({ description: `Đã xóa người dùng ${userToDelete.fullName}.` });
+    }
+  };
+
+  const handleDeleteStudents = async (ids: string[]) => {
+    for (const id of ids) {
+      deleteData(COLLECTIONS.USERS, id);
+    }
+    toast({ description: `Đã xóa ${ids.length} học sinh.` });
   };
 
   const renderContent = () => {
@@ -285,6 +303,7 @@ const MainApp: React.FC = () => {
                   students={users.filter(u => u.role === UserRole.STUDENT && u.classId === currentUser.classId)}
                   onBack={() => navigate('TEACHER_DASHBOARD')}
                   onDeleteStudent={handleDeleteUser}
+                  onDeleteStudents={handleDeleteStudents}
                   onAddStudents={async (names) => {
                     if (!currentUser?.classId) return;
                     for (const name of names) {
