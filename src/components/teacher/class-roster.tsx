@@ -83,8 +83,14 @@ const ClassRoster: React.FC<ClassRosterProps> = ({
 
   const handleBulkDelete = async () => {
     if (window.confirm(`Bạn có chắc chắn muốn xóa ${selectedStudents.length} học sinh đã chọn? Thao tác này không thể hoàn tác.`)) {
-      await onDeleteStudents(selectedStudents);
-      setSelectedStudents([]);
+      try {
+        await onDeleteStudents(selectedStudents);
+        setSelectedStudents([]);
+      } catch(error) {
+        // The error toast is handled by the parent component.
+        // We just need to catch the re-thrown error here to prevent an unhandled promise rejection.
+        console.error("Bulk delete failed:", error);
+      }
     }
   };
 

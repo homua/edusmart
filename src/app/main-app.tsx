@@ -217,15 +217,34 @@ const MainApp: React.FC = () => {
     }
 
     if (window.confirm(`Bạn có chắc chắn muốn xóa người dùng "${userToDelete.fullName}"? Thao tác này không thể hoàn tác.`)) {
-      deleteData(COLLECTIONS.USERS, id);
-      toast({ description: `Đã xóa người dùng ${userToDelete.fullName}.` });
+      try {
+        await deleteData(COLLECTIONS.USERS, id);
+        toast({ description: `Đã xóa người dùng ${userToDelete.fullName}.` });
+      } catch (error) {
+        console.error(`Error deleting user: ${id}`, error);
+        toast({
+          variant: 'destructive',
+          title: 'Lỗi',
+          description: `Không thể xóa người dùng "${userToDelete.fullName}". Vui lòng thử lại.`
+        });
+      }
     }
   };
 
   const handleDeleteStudents = async (ids: string[]) => {
-    const deletePromises = ids.map(id => deleteData(COLLECTIONS.USERS, id));
-    await Promise.all(deletePromises);
-    toast({ description: `Đã xóa ${ids.length} học sinh.` });
+    try {
+      const deletePromises = ids.map(id => deleteData(COLLECTIONS.USERS, id));
+      await Promise.all(deletePromises);
+      toast({ description: `Đã xóa ${ids.length} học sinh.` });
+    } catch(error) {
+      console.error('Failed to delete students:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Lỗi',
+        description: 'Đã xảy ra lỗi khi xóa học sinh. Vui lòng thử lại.'
+      });
+      throw error; // Re-throw to notify caller
+    }
   };
 
   const renderContent = () => {
