@@ -33,6 +33,8 @@ const MainApp: React.FC = () => {
   const { firestore, auth } = useFirebase();
   const { user: authUser, isUserLoading: isAuthUserLoading } = useUser();
   const { toast } = useToast();
+  
+  const [isClient, setIsClient] = useState(false);
 
   const usersCollection = useMemoFirebase(() => firestore ? collection(firestore, COLLECTIONS.USERS) : null, [firestore]);
   const classesCollection = useMemoFirebase(() => firestore ? collection(firestore, COLLECTIONS.CLASSES) : null, [firestore]);
@@ -56,6 +58,10 @@ const MainApp: React.FC = () => {
   const [currentAssignment, setCurrentAssignment] = useState<Assignment | null>(null);
   
   const isLoading = usersLoading || classesLoading || assignmentsLoading || submissionsLoading || isAuthUserLoading;
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
     if (auth && !auth.currentUser) {
@@ -333,7 +339,7 @@ const MainApp: React.FC = () => {
     return <LandingPage onNavigate={() => navigate('AUTH')} />;
   };
 
-  if (isInitialLoad && isLoading) {
+  if (!isClient || (isInitialLoad && isLoading)) {
     return <LoadingScreen />;
   }
 
