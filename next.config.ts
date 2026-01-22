@@ -1,11 +1,6 @@
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
-  experimental: {
-    allowedNextBundlerReactClientConnections: [
-      '*.us-central1.hosted.app',
-    ],
-  },
   /* config options here */
   typescript: {
     ignoreBuildErrors: true,
