@@ -81,9 +81,9 @@ const ClassRoster: React.FC<ClassRosterProps> = ({
     setIsParsing(false);
   }
 
-  const handleBulkDelete = () => {
+  const handleBulkDelete = async () => {
     if (window.confirm(`Bạn có chắc chắn muốn xóa ${selectedStudents.length} học sinh đã chọn? Thao tác này không thể hoàn tác.`)) {
-      onDeleteStudents(selectedStudents);
+      await onDeleteStudents(selectedStudents);
       setSelectedStudents([]);
     }
   };
