@@ -159,9 +159,9 @@ const MainApp: React.FC = () => {
   };
 
   const deleteData = (collectionName: string, id: string) => {
-    if (!firestore) return;
+    if (!firestore) return Promise.resolve();
     const docRef = doc(firestore, collectionName, id);
-    deleteDocumentNonBlocking(docRef);
+    return deleteDocumentNonBlocking(docRef);
   };
 
   const handleExportData = () => {
@@ -223,9 +223,8 @@ const MainApp: React.FC = () => {
   };
 
   const handleDeleteStudents = async (ids: string[]) => {
-    for (const id of ids) {
-      deleteData(COLLECTIONS.USERS, id);
-    }
+    const deletePromises = ids.map(id => deleteData(COLLECTIONS.USERS, id));
+    await Promise.all(deletePromises);
     toast({ description: `Đã xóa ${ids.length} học sinh.` });
   };
 
