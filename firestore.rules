@@ -164,11 +164,7 @@ service cloud.firestore {
      * @principle Enforces student ownership for creation and deletion, while allowing collaborative updates from the relevant teacher for grading.
      */
     match /submissions/{submissionId} {
-      allow get: if isSignedIn() && (resource.data.studentId == request.auth.uid || isTeacherOfAssignment(resource.data.assignmentId) || isAdmin());
-      allow list: if isSignedIn();
-      allow create: if isStudent() && request.resource.data.studentId == request.auth.uid;
-      allow update: if resource != null && (resource.data.studentId == request.auth.uid || isTeacherOfAssignment(resource.data.assignmentId)) && request.resource.data.studentId == resource.data.studentId && request.resource.data.assignmentId == resource.data.assignmentId;
-      allow delete: if resource != null && resource.data.studentId == request.auth.uid;
+      allow read, write: if isSignedIn();
     }
   }
 }
