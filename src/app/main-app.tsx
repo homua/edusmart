@@ -22,8 +22,6 @@ import ReportView from '@/components/teacher/report-view';
 import ClassRoster from '@/components/teacher/class-roster';
 import StudentPortal from '@/components/student/student-portal';
 import AssignmentRunner from '@/components/student/assignment-runner';
-import { FirestorePermissionError } from '@/firebase';
-import { errorEmitter } from '@/firebase';
 
 const COLLECTIONS = {
   USERS: 'users',
@@ -80,7 +78,7 @@ const MainApp: React.FC = () => {
       const adminId = authUser.uid; // Use the actual auth UID
       const adminUser: User = { id: adminId, username: 'admin', password: 'admin123', fullName: 'Quản trị viên', role: UserRole.ADMIN };
       const userDocRef = doc(firestore, COLLECTIONS.USERS, adminId);
-      setDocumentNonBlocking(userDocRef, adminUser, { merge: true });
+      saveData(COLLECTIONS.USERS, adminId, adminUser);
     }
     if (!usersLoading && !isAuthUserLoading) {
       setIsInitialLoad(false);
@@ -205,7 +203,7 @@ const MainApp: React.FC = () => {
   };
 
   const handleDeleteUser = async (userToDelete: User) => {
-    const { id, role } = userToDelete;
+    const { id, role, fullName } = userToDelete;
 
     if (currentUser?.id === id) {
       toast({ variant: "destructive", title: "Lỗi", description: "Bạn không thể tự xóa tài khoản của mình."});
@@ -220,7 +218,7 @@ const MainApp: React.FC = () => {
       }
     }
 
-    if (window.confirm(`Bạn có chắc chắn muốn xóa người dùng "${userToDelete.fullName}"? Thao tác này không thể hoàn tác.`)) {
+    if (window.confirm(`Bạn có chắc chắn muốn xóa người dùng "${fullName}"? Thao tác này không thể hoàn tác.`)) {
        if (!firestore) {
           toast({
               variant: 'destructive',
@@ -232,19 +230,13 @@ const MainApp: React.FC = () => {
       try {
         const docRef = doc(firestore, COLLECTIONS.USERS, id);
         await deleteDoc(docRef);
-        toast({ description: `Đã xóa người dùng ${userToDelete.fullName}.` });
+        toast({ description: `Đã xóa người dùng ${fullName}.` });
       } catch (error) {
         console.error(`Error deleting user: ${id}`, error);
-        const permissionError = new FirestorePermissionError({
-          path: `users/${id}`,
-          operation: 'delete',
-        });
-        errorEmitter.emit('permission-error', permissionError);
-
         toast({
           variant: 'destructive',
-          title: 'Lỗi',
-          description: `Không thể xóa người dùng "${userToDelete.fullName}". Vui lòng thử lại.`
+          title: 'Lỗi xóa',
+          description: `Đã xảy ra lỗi khi xóa người dùng "${fullName}". Vui lòng kiểm tra console để biết chi tiết.`
         });
       }
     }
@@ -257,7 +249,7 @@ const MainApp: React.FC = () => {
         title: 'Lỗi hệ thống',
         description: 'Không thể kết nối tới cơ sở dữ liệu. Vui lòng tải lại trang.'
       });
-      throw new Error('Firestore service not available.');
+      return Promise.reject(new Error('Firestore service not available.'));
     }
     try {
       const deletePromises = ids.map(id => {
@@ -268,18 +260,12 @@ const MainApp: React.FC = () => {
       toast({ description: `Đã xóa ${ids.length} học sinh.` });
     } catch(error) {
       console.error('Failed to delete students:', error);
-      const permissionError = new FirestorePermissionError({
-        path: 'users/{userId}',
-        operation: 'delete',
-      });
-      errorEmitter.emit('permission-error', permissionError);
-
       toast({
         variant: 'destructive',
-        title: 'Lỗi',
-        description: 'Đã xảy ra lỗi khi xóa học sinh. Vui lòng thử lại.'
+        title: 'Lỗi xóa hàng loạt',
+        description: 'Đã xảy ra lỗi khi xóa học sinh. Vui lòng kiểm tra console để biết chi tiết.'
       });
-      throw error;
+      return Promise.reject(error);
     }
   };
 
@@ -314,8 +300,6 @@ const MainApp: React.FC = () => {
                       toast({ description: 'Đã xóa lớp học.' });
                     } catch (error) {
                       console.error(`Error deleting class: ${id}`, error);
-                      const permissionError = new FirestorePermissionError({ path: `classes/${id}`, operation: 'delete' });
-                      errorEmitter.emit('permission-error', permissionError);
                       toast({ variant: 'destructive', title: 'Lỗi', description: `Không thể xóa lớp. Vui lòng thử lại.`});
                     }
                   }
@@ -351,8 +335,6 @@ const MainApp: React.FC = () => {
                            toast({ description: 'Đã xóa bài tập.'});
                         } catch (error) {
                            console.error(`Error deleting assignment: ${id}`, error);
-                           const permissionError = new FirestorePermissionError({ path: `assignments/${id}`, operation: 'delete' });
-                           errorEmitter.emit('permission-error', permissionError);
                            toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể xóa bài tập. Vui lòng thử lại.'});
                         }
                      }
@@ -465,5 +447,7 @@ const MainApp: React.FC = () => {
 };
 
 export default MainApp;
+
+    
 
     
