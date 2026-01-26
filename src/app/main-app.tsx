@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useUser, useCollection, useFirebase, useMemoFirebase, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
+import { useUser, useCollection, useFirebase, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
 import { collection, doc, deleteDoc } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
 
@@ -168,19 +168,6 @@ const MainApp: React.FC = () => {
     return setDocumentNonBlocking(docRef, data, { merge: true });
   };
 
-  const deleteData = (collectionName: string, id: string): Promise<void> => {
-    if (!firestore) {
-       toast({
-            variant: 'destructive',
-            title: 'Lỗi hệ thống',
-            description: 'Không thể kết nối tới cơ sở dữ liệu. Vui lòng tải lại trang.'
-        });
-      return Promise.reject(new Error('Firestore service not available.'));
-    }
-    const docRef = doc(firestore, collectionName, id);
-    return deleteDocumentNonBlocking(docRef);
-  };
-
   const handleExportData = () => {
     const fullData = { users, classes, assignments, submissions, exportDate: new Date().toISOString() };
     const blob = new Blob([JSON.stringify(fullData, null, 2)], { type: 'application/json' });
@@ -315,7 +302,24 @@ const MainApp: React.FC = () => {
                 onDeleteUser={handleDeleteUser}
                 onAddClass={async (c) => await saveData(COLLECTIONS.CLASSES, c.id, c)}
                 onUpdateClass={async (c) => await saveData(COLLECTIONS.CLASSES, c.id, c)}
-                onDeleteClass={async (id) => await deleteData(COLLECTIONS.CLASSES, id)}
+                onDeleteClass={async (id) => {
+                  const className = classes.find(c => c.id === id)?.name ?? '';
+                  if (window.confirm(`Bạn có chắc chắn muốn xóa lớp "${className}"? Thao tác này sẽ khiến các học sinh trong lớp bị mất liên kết.`)) {
+                    if (!firestore) {
+                      toast({ variant: 'destructive', title: 'Lỗi hệ thống', description: 'Không thể kết nối tới cơ sở dữ liệu.' });
+                      return;
+                    }
+                    try {
+                      await deleteDoc(doc(firestore, COLLECTIONS.CLASSES, id));
+                      toast({ description: 'Đã xóa lớp học.' });
+                    } catch (error) {
+                      console.error(`Error deleting class: ${id}`, error);
+                      const permissionError = new FirestorePermissionError({ path: `classes/${id}`, operation: 'delete' });
+                      errorEmitter.emit('permission-error', permissionError);
+                      toast({ variant: 'destructive', title: 'Lỗi', description: `Không thể xóa lớp. Vui lòng thử lại.`});
+                    }
+                  }
+                }}
                 onExport={handleExportData}
                 onImport={handleImportData}
               />
@@ -335,7 +339,24 @@ const MainApp: React.FC = () => {
                   onCreateNew={() => navigate('CREATE_ASSIGNMENT')}
                   onViewReport={(a) => navigate('VIEW_REPORT', a)}
                   onEdit={(a) => navigate('EDIT_ASSIGNMENT', a)}
-                  onDelete={async (id) => await deleteData(COLLECTIONS.ASSIGNMENTS, id)}
+                  onDelete={async (id) => {
+                    const assignmentTitle = assignments.find(a => a.id === id)?.title ?? '';
+                     if (window.confirm(`Bạn có chắc chắn muốn xóa bài tập "${assignmentTitle}"?`)) {
+                        if (!firestore) {
+                           toast({ variant: 'destructive', title: 'Lỗi hệ thống', description: 'Không thể kết nối tới cơ sở dữ liệu.' });
+                           return;
+                        }
+                        try {
+                           await deleteDoc(doc(firestore, COLLECTIONS.ASSIGNMENTS, id));
+                           toast({ description: 'Đã xóa bài tập.'});
+                        } catch (error) {
+                           console.error(`Error deleting assignment: ${id}`, error);
+                           const permissionError = new FirestorePermissionError({ path: `assignments/${id}`, operation: 'delete' });
+                           errorEmitter.emit('permission-error', permissionError);
+                           toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể xóa bài tập. Vui lòng thử lại.'});
+                        }
+                     }
+                  }}
                   onViewRoster={() => navigate('CLASS_ROSTER')}
                 />
               );
@@ -444,3 +465,5 @@ const MainApp: React.FC = () => {
 };
 
 export default MainApp;
+
+    
