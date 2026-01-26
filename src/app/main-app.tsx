@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useUser, useCollection, useFirebase, useMemoFirebase, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
+import { collection, doc, deleteDoc } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
 
 import { UserRole, type View, type Assignment, type Submission, type User, type Class } from '@/lib/types';
@@ -22,6 +22,8 @@ import ReportView from '@/components/teacher/report-view';
 import ClassRoster from '@/components/teacher/class-roster';
 import StudentPortal from '@/components/student/student-portal';
 import AssignmentRunner from '@/components/student/assignment-runner';
+import { FirestorePermissionError } from '@/firebase';
+import { errorEmitter } from '@/firebase';
 
 const COLLECTIONS = {
   USERS: 'users',
@@ -232,11 +234,26 @@ const MainApp: React.FC = () => {
     }
 
     if (window.confirm(`Bạn có chắc chắn muốn xóa người dùng "${userToDelete.fullName}"? Thao tác này không thể hoàn tác.`)) {
+       if (!firestore) {
+          toast({
+              variant: 'destructive',
+              title: 'Lỗi hệ thống',
+              description: 'Không thể kết nối tới cơ sở dữ liệu. Vui lòng tải lại trang.'
+          });
+          return;
+      }
       try {
-        await deleteData(COLLECTIONS.USERS, id);
+        const docRef = doc(firestore, COLLECTIONS.USERS, id);
+        await deleteDoc(docRef);
         toast({ description: `Đã xóa người dùng ${userToDelete.fullName}.` });
       } catch (error) {
         console.error(`Error deleting user: ${id}`, error);
+        const permissionError = new FirestorePermissionError({
+          path: `users/${id}`,
+          operation: 'delete',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+
         toast({
           variant: 'destructive',
           title: 'Lỗi',
@@ -247,18 +264,35 @@ const MainApp: React.FC = () => {
   };
 
   const handleDeleteStudents = async (ids: string[]) => {
+    if (!firestore) {
+      toast({
+        variant: 'destructive',
+        title: 'Lỗi hệ thống',
+        description: 'Không thể kết nối tới cơ sở dữ liệu. Vui lòng tải lại trang.'
+      });
+      throw new Error('Firestore service not available.');
+    }
     try {
-      const deletePromises = ids.map(id => deleteData(COLLECTIONS.USERS, id));
+      const deletePromises = ids.map(id => {
+        const docRef = doc(firestore, COLLECTIONS.USERS, id);
+        return deleteDoc(docRef);
+      });
       await Promise.all(deletePromises);
       toast({ description: `Đã xóa ${ids.length} học sinh.` });
     } catch(error) {
       console.error('Failed to delete students:', error);
+      const permissionError = new FirestorePermissionError({
+        path: 'users/{userId}',
+        operation: 'delete',
+      });
+      errorEmitter.emit('permission-error', permissionError);
+
       toast({
         variant: 'destructive',
         title: 'Lỗi',
         description: 'Đã xảy ra lỗi khi xóa học sinh. Vui lòng thử lại.'
       });
-      throw error; // Re-throw to notify caller
+      throw error;
     }
   };
 
@@ -410,5 +444,3 @@ const MainApp: React.FC = () => {
 };
 
 export default MainApp;
-
-    
