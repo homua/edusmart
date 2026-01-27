@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useUser, useCollection, useFirebase, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
-import { collection, doc, deleteDoc } from 'firebase/firestore';
+import { collection, doc } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
 
 import { UserRole, type View, type Assignment, type Submission, type User, type Class } from '@/lib/types';
@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 
 import { parseStudentListAI } from '@/ai/flows/parse-student-list';
 import { slugify } from '@/lib/utils';
+import { deleteUser, deleteUsers, deleteClass, deleteAssignment } from '@/lib/db';
 import LoadingScreen from '@/components/loading-screen';
 import Header from '@/components/header';
 import LandingPage from '@/components/landing-page';
@@ -220,52 +221,39 @@ const MainApp: React.FC = () => {
 
     if (window.confirm(`Bạn có chắc chắn muốn xóa người dùng "${fullName}"? Thao tác này không thể hoàn tác.`)) {
        if (!firestore) {
-          toast({
-              variant: 'destructive',
-              title: 'Lỗi hệ thống',
-              description: 'Không thể kết nối tới cơ sở dữ liệu. Vui lòng tải lại trang.'
-          });
+          toast({ variant: 'destructive', title: 'Lỗi hệ thống', description: 'Không thể kết nối tới cơ sở dữ liệu.' });
           return;
-      }
+       }
       try {
-        const docRef = doc(firestore, COLLECTIONS.USERS, id);
-        await deleteDoc(docRef);
+        await deleteUser(firestore, id);
         toast({ description: `Đã xóa người dùng ${fullName}.` });
       } catch (error) {
         console.error(`Error deleting user: ${id}`, error);
         toast({
           variant: 'destructive',
           title: 'Lỗi xóa',
-          description: `Đã xảy ra lỗi khi xóa người dùng "${fullName}". Vui lòng kiểm tra console để biết chi tiết.`
+          description: `Đã xảy ra lỗi khi xóa người dùng "${fullName}".`
         });
       }
     }
   };
 
-  const handleDeleteStudents = async (ids: string[]) => {
-    if (!firestore) {
-      toast({
-        variant: 'destructive',
-        title: 'Lỗi hệ thống',
-        description: 'Không thể kết nối tới cơ sở dữ liệu. Vui lòng tải lại trang.'
-      });
-      return Promise.reject(new Error('Firestore service not available.'));
-    }
+  const handleDeleteStudents = async (ids: string[]): Promise<void> => {
+     if (!firestore) {
+        toast({ variant: 'destructive', title: 'Lỗi hệ thống', description: 'Không thể kết nối tới cơ sở dữ liệu.'});
+        throw new Error('Firestore service not available.');
+     }
     try {
-      const deletePromises = ids.map(id => {
-        const docRef = doc(firestore, COLLECTIONS.USERS, id);
-        return deleteDoc(docRef);
-      });
-      await Promise.all(deletePromises);
+      await deleteUsers(firestore, ids);
       toast({ description: `Đã xóa ${ids.length} học sinh.` });
     } catch(error) {
       console.error('Failed to delete students:', error);
       toast({
         variant: 'destructive',
         title: 'Lỗi xóa hàng loạt',
-        description: 'Đã xảy ra lỗi khi xóa học sinh. Vui lòng kiểm tra console để biết chi tiết.'
+        description: 'Đã xảy ra lỗi khi xóa học sinh.'
       });
-      return Promise.reject(error);
+      throw error; // Re-throw error to be caught by the calling component
     }
   };
 
@@ -296,7 +284,7 @@ const MainApp: React.FC = () => {
                       return;
                     }
                     try {
-                      await deleteDoc(doc(firestore, COLLECTIONS.CLASSES, id));
+                      await deleteClass(firestore, id);
                       toast({ description: 'Đã xóa lớp học.' });
                     } catch (error) {
                       console.error(`Error deleting class: ${id}`, error);
@@ -331,7 +319,7 @@ const MainApp: React.FC = () => {
                            return;
                         }
                         try {
-                           await deleteDoc(doc(firestore, COLLECTIONS.ASSIGNMENTS, id));
+                           await deleteAssignment(firestore, id);
                            toast({ description: 'Đã xóa bài tập.'});
                         } catch (error) {
                            console.error(`Error deleting assignment: ${id}`, error);
@@ -447,7 +435,3 @@ const MainApp: React.FC = () => {
 };
 
 export default MainApp;
-
-    
-
-    
