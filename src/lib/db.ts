@@ -1,4 +1,5 @@
-import { doc, deleteDoc, type Firestore } from 'firebase/firestore';
+
+import { doc, deleteDoc, writeBatch, type Firestore } from 'firebase/firestore';
 
 const COLLECTIONS = {
   USERS: 'users',
@@ -14,11 +15,19 @@ export const deleteUser = async (db: Firestore, userId: string): Promise<void> =
 
 export const deleteUsers = async (db: Firestore, userIds: string[]): Promise<void> => {
     if (!userIds || userIds.length === 0) return;
-    const deletePromises = userIds.map(id => {
-        const docRef = doc(db, COLLECTIONS.USERS, id);
-        return deleteDoc(docRef);
-    });
-    await Promise.all(deletePromises);
+    
+    // Firestore allows a maximum of 500 operations in a single batch.
+    // We'll process the deletions in chunks of 500.
+    const batchSize = 500;
+    for (let i = 0; i < userIds.length; i += batchSize) {
+        const batch = writeBatch(db);
+        const chunk = userIds.slice(i, i + batchSize);
+        chunk.forEach(id => {
+            const docRef = doc(db, COLLECTIONS.USERS, id);
+            batch.delete(docRef);
+        });
+        await batch.commit();
+    }
 };
 
 export const deleteClass = async (db: Firestore, classId: string): Promise<void> => {
@@ -32,3 +41,5 @@ export const deleteAssignment = async (db: Firestore, assignmentId: string): Pro
     const docRef = doc(db, COLLECTIONS.ASSIGNMENTS, assignmentId);
     await deleteDoc(docRef);
 };
+
+    
