@@ -444,5 +444,3 @@ const MainApp: React.FC = () => {
 };
 
 export default MainApp;
-
-    

@@ -41,5 +41,3 @@ export const deleteAssignment = async (db: Firestore, assignmentId: string): Pro
     const docRef = doc(db, COLLECTIONS.ASSIGNMENTS, assignmentId);
     await deleteDoc(docRef);
 };
-
-    
