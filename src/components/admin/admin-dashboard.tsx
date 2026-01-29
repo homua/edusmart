@@ -300,7 +300,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <UserTable 
                     users={selectedClassId === 'unassigned' ? unassignedStudents : studentsByClass[selectedClassId] || []} 
                     onDeleteUser={onDeleteUser}
-                    canDelete={false}
+                    canDelete={true}
                   />
                 )}
               </TabsContent>
@@ -367,9 +367,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex items-center justify-end gap-2">
-                                <Button variant="ghost" size="icon" onClick={() => onDeleteUser(user)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
                               </div>
                             </TableCell>
                           </TableRow>
@@ -402,9 +399,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex items-center justify-end gap-2">
-                                <Button variant="ghost" size="icon" onClick={() => onDeleteUser(user)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
                               </div>
                             </TableCell>
                           </TableRow>
