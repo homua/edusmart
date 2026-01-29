@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useUser, useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { collection, doc, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, doc, setDoc, writeBatch, deleteDoc } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
 
 import { UserRole, type View, type Assignment, type Submission, type User, type Class } from '@/lib/types';
@@ -11,7 +11,6 @@ import { useToast } from '@/hooks/use-toast';
 
 import { parseStudentListAI } from '@/ai/flows/parse-student-list';
 import { slugify } from '@/lib/utils';
-import { deleteUser, deleteUsers, deleteClass, deleteAssignment } from '@/lib/db';
 import LoadingScreen from '@/components/loading-screen';
 import Header from '@/components/header';
 import LandingPage from '@/components/landing-page';
@@ -234,7 +233,7 @@ const MainApp: React.FC = () => {
 
     if (window.confirm(`Bạn có chắc chắn muốn xóa người dùng "${fullName}"? Thao tác này không thể hoàn tác.`)) {
       try {
-        await deleteUser(firestore, id);
+        await deleteDoc(doc(firestore, COLLECTIONS.USERS, id));
         toast({ description: `Đã xóa người dùng ${fullName}.` });
       } catch (error) {
         console.error(`Error deleting user ${id}:`, error);
@@ -253,7 +252,16 @@ const MainApp: React.FC = () => {
         throw new Error('Firestore service not available.');
      }
     try {
-      await deleteUsers(firestore, ids);
+      const batchSize = 500;
+      for (let i = 0; i < ids.length; i += batchSize) {
+        const batch = writeBatch(firestore);
+        const chunk = ids.slice(i, i + batchSize);
+        chunk.forEach(id => {
+            const docRef = doc(firestore, COLLECTIONS.USERS, id);
+            batch.delete(docRef);
+        });
+        await batch.commit();
+      }
       toast({ description: `Đã xóa ${ids.length} học sinh.` });
     } catch(error) {
       console.error('Failed to delete students:', error);
@@ -274,7 +282,7 @@ const MainApp: React.FC = () => {
     const className = classes.find(c => c.id === id)?.name ?? '';
     if (window.confirm(`Bạn có chắc chắn muốn xóa lớp "${className}"? Thao tác này sẽ khiến các học sinh trong lớp bị mất liên kết.`)) {
       try {
-        await deleteClass(firestore, id);
+        await deleteDoc(doc(firestore, COLLECTIONS.CLASSES, id));
         toast({ description: 'Đã xóa lớp học.' });
       } catch (error) {
         console.error(`Error deleting class ${id}:`, error);
@@ -291,7 +299,7 @@ const MainApp: React.FC = () => {
     const assignmentTitle = assignments.find(a => a.id === id)?.title ?? '';
     if (window.confirm(`Bạn có chắc chắn muốn xóa bài tập "${assignmentTitle}"?`)) {
       try {
-        await deleteAssignment(firestore, id);
+        await deleteDoc(doc(firestore, COLLECTIONS.ASSIGNMENTS, id));
         toast({ description: 'Đã xóa bài tập.'});
       } catch (error) {
         console.error(`Error deleting assignment ${id}:`, error);
@@ -374,7 +382,6 @@ const MainApp: React.FC = () => {
                   classes={classes}
                   students={users.filter(u => u.role === UserRole.STUDENT && u.classId === currentUser.classId)}
                   onBack={() => navigate('TEACHER_DASHBOARD')}
-                  onDeleteStudent={handleDeleteUser}
                   onDeleteStudents={handleDeleteStudents}
                   onAddStudents={async (names) => {
                     if (!currentUser?.classId) return;

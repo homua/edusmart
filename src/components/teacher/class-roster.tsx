@@ -30,7 +30,6 @@ interface ClassRosterProps {
   students: User[];
   onBack: () => void;
   onAddStudents: (names: string[]) => Promise<void>;
-  onDeleteStudent: (student: User) => Promise<void>;
   onDeleteStudents: (ids: string[]) => Promise<void>;
   onParseStudents: (bulkInput: string) => Promise<string[]>;
 }
@@ -41,7 +40,6 @@ const ClassRoster: React.FC<ClassRosterProps> = ({
   students,
   onBack,
   onAddStudents,
-  onDeleteStudent,
   onDeleteStudents,
   onParseStudents,
 }) => {
@@ -280,9 +278,6 @@ const ClassRoster: React.FC<ClassRosterProps> = ({
                     </div>
                   </label>
                 </div>
-                <Button onClick={() => onDeleteStudent(s)} variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
-                  <Trash2 className="h-4 w-4" />
-                </Button>
               </div>
             ))}
             {students.length === 0 && (
