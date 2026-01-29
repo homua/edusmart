@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useUser, useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { collection, doc, setDoc, writeBatch, deleteDoc } from 'firebase/firestore';
+import { collection, doc, setDoc, writeBatch, deleteDoc, deleteField } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
 
 import { UserRole, type View, type Assignment, type Submission, type User, type Class } from '@/lib/types';
@@ -22,6 +22,7 @@ import ReportView from '@/components/teacher/report-view';
 import ClassRoster from '@/components/teacher/class-roster';
 import StudentPortal from '@/components/student/student-portal';
 import AssignmentRunner from '@/components/student/assignment-runner';
+import { deleteClass, deleteAssignment } from '@/lib/db';
 
 const COLLECTIONS = {
   USERS: 'users',
@@ -213,8 +214,8 @@ const MainApp: React.FC = () => {
 
   const handleDeleteUser = async (userToDelete: User) => {
     if (!firestore) {
-        toast({ variant: 'destructive', title: 'Lỗi hệ thống', description: 'Không thể kết nối tới cơ sở dữ liệu.' });
-        return;
+      toast({ variant: 'destructive', title: 'Lỗi hệ thống', description: 'Không thể kết nối tới cơ sở dữ liệu.' });
+      return;
     }
     const { id, role, fullName } = userToDelete;
 
@@ -222,18 +223,31 @@ const MainApp: React.FC = () => {
       toast({ variant: "destructive", title: "Lỗi", description: "Bạn không thể tự xóa tài khoản của mình."});
       return;
     }
-    
-    if (role === UserRole.TEACHER) {
-      const isHeadTeacher = classes.some(c => c.teacherId === id);
-      if (isHeadTeacher) {
-        toast({ variant: "destructive", title: "Không thể xóa", description: "Giáo viên này đang là chủ nhiệm một lớp. Vui lòng bỏ gán chủ nhiệm trước khi xóa."});
-        return;
-      }
-    }
 
-    if (window.confirm(`Bạn có chắc chắn muốn xóa người dùng "${fullName}"? Thao tác này không thể hoàn tác.`)) {
+    const isHeadTeacher = role === UserRole.TEACHER && classes.some(c => c.teacherId === id);
+    const confirmMessage = isHeadTeacher
+      ? `Giáo viên "${fullName}" hiện đang là chủ nhiệm của một hoặc nhiều lớp. Việc xóa sẽ tự động gỡ bỏ họ khỏi vị trí chủ nhiệm. Bạn có chắc chắn muốn tiếp tục?`
+      : `Bạn có chắc chắn muốn xóa người dùng "${fullName}"? Thao tác này không thể hoàn tác.`;
+
+    if (window.confirm(confirmMessage)) {
       try {
-        await deleteDoc(doc(firestore, COLLECTIONS.USERS, id));
+        const batch = writeBatch(firestore);
+
+        // If deleting a homeroom teacher, unassign them from classes
+        if (isHeadTeacher) {
+          const classesToUpdate = classes.filter(c => c.teacherId === id);
+          classesToUpdate.forEach(c => {
+            const classRef = doc(firestore, COLLECTIONS.CLASSES, c.id);
+            batch.update(classRef, { teacherId: deleteField() });
+          });
+        }
+
+        // Delete the user document
+        const userRef = doc(firestore, COLLECTIONS.USERS, id);
+        batch.delete(userRef);
+
+        await batch.commit();
+
         toast({ description: `Đã xóa người dùng ${fullName}.` });
       } catch (error) {
         console.error(`Error deleting user ${id}:`, error);
@@ -274,22 +288,34 @@ const MainApp: React.FC = () => {
     }
   };
 
-  const handleDeleteClass = async (id: string) => {
+  const handleClassDelete = async (id: string) => {
     if (!firestore) {
       toast({ variant: 'destructive', title: 'Lỗi hệ thống', description: 'Không thể kết nối tới cơ sở dữ liệu.' });
       return;
     }
-    const className = classes.find(c => c.id === id)?.name ?? '';
-    if (window.confirm(`Bạn có chắc chắn muốn xóa lớp "${className}"? Thao tác này sẽ khiến các học sinh trong lớp bị mất liên kết.`)) {
-      try {
-        await deleteDoc(doc(firestore, COLLECTIONS.CLASSES, id));
-        toast({ description: 'Đã xóa lớp học.' });
-      } catch (error) {
-        console.error(`Error deleting class ${id}:`, error);
-        toast({ variant: 'destructive', title: 'Lỗi', description: `Không thể xóa lớp. Vui lòng thử lại.`});
-      }
+    try {
+      await deleteClass(firestore, id);
+      toast({ description: 'Đã xóa lớp học.' });
+    } catch (error) {
+      console.error(`Error deleting class ${id}:`, error);
+      toast({ variant: 'destructive', title: 'Lỗi', description: `Không thể xóa lớp. Vui lòng thử lại.` });
     }
   };
+
+  const handleDeleteClass = async (id: string) => {
+    const className = classes.find(c => c.id === id)?.name ?? '';
+    const classStudents = users.filter(u => u.classId === id);
+
+    let confirmMessage = `Bạn có chắc chắn muốn xóa lớp "${className}"?`;
+    if (classStudents.length > 0) {
+      confirmMessage += ` Thao tác này sẽ khiến ${classStudents.length} học sinh trong lớp bị mất liên kết.`;
+    }
+
+    if (window.confirm(confirmMessage)) {
+      await handleClassDelete(id);
+    }
+  };
+
 
   const handleDeleteAssignment = async (id: string) => {
     if (!firestore) {
@@ -298,8 +324,8 @@ const MainApp: React.FC = () => {
     }
     const assignmentTitle = assignments.find(a => a.id === id)?.title ?? '';
     if (window.confirm(`Bạn có chắc chắn muốn xóa bài tập "${assignmentTitle}"?`)) {
-      try {
-        await deleteDoc(doc(firestore, COLLECTIONS.ASSIGNMENTS, id));
+       try {
+        await deleteAssignment(firestore, id);
         toast({ description: 'Đã xóa bài tập.'});
       } catch (error) {
         console.error(`Error deleting assignment ${id}:`, error);
@@ -456,3 +482,5 @@ const MainApp: React.FC = () => {
 };
 
 export default MainApp;
+
+    
