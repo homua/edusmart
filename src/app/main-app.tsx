@@ -22,7 +22,6 @@ import ReportView from '@/components/teacher/report-view';
 import ClassRoster from '@/components/teacher/class-roster';
 import StudentPortal from '@/components/student/student-portal';
 import AssignmentRunner from '@/components/student/assignment-runner';
-import { deleteClass, deleteAssignment } from '@/lib/db';
 
 const COLLECTIONS = {
   USERS: 'users',
@@ -288,21 +287,11 @@ const MainApp: React.FC = () => {
     }
   };
 
-  const handleClassDelete = async (id: string) => {
+  const handleDeleteClass = async (id: string) => {
     if (!firestore) {
       toast({ variant: 'destructive', title: 'Lỗi hệ thống', description: 'Không thể kết nối tới cơ sở dữ liệu.' });
       return;
     }
-    try {
-      await deleteClass(firestore, id);
-      toast({ description: 'Đã xóa lớp học.' });
-    } catch (error) {
-      console.error(`Error deleting class ${id}:`, error);
-      toast({ variant: 'destructive', title: 'Lỗi', description: `Không thể xóa lớp. Vui lòng thử lại.` });
-    }
-  };
-
-  const handleDeleteClass = async (id: string) => {
     const className = classes.find(c => c.id === id)?.name ?? '';
     const classStudents = users.filter(u => u.classId === id);
 
@@ -312,7 +301,14 @@ const MainApp: React.FC = () => {
     }
 
     if (window.confirm(confirmMessage)) {
-      await handleClassDelete(id);
+       try {
+        const classRef = doc(firestore, COLLECTIONS.CLASSES, id);
+        await deleteDoc(classRef);
+        toast({ description: 'Đã xóa lớp học.' });
+      } catch (error) {
+        console.error(`Error deleting class ${id}:`, error);
+        toast({ variant: 'destructive', title: 'Lỗi', description: `Không thể xóa lớp. Vui lòng thử lại.` });
+      }
     }
   };
 
@@ -325,7 +321,8 @@ const MainApp: React.FC = () => {
     const assignmentTitle = assignments.find(a => a.id === id)?.title ?? '';
     if (window.confirm(`Bạn có chắc chắn muốn xóa bài tập "${assignmentTitle}"?`)) {
        try {
-        await deleteAssignment(firestore, id);
+        const assignmentRef = doc(firestore, COLLECTIONS.ASSIGNMENTS, id);
+        await deleteDoc(assignmentRef);
         toast({ description: 'Đã xóa bài tập.'});
       } catch (error) {
         console.error(`Error deleting assignment ${id}:`, error);
