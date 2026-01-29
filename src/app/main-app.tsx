@@ -314,19 +314,9 @@ const MainApp: React.FC = () => {
 
     const studentsToUpdate = users.filter(u => u.classId && ids.includes(u.classId));
     
-    const classNames = ids.map(id => classes.find(c => c.id === id)?.name).filter(Boolean);
+    // The confirmation is now handled in the AdminDashboard component's AlertDialog.
+    // This removes the potentially confusing double confirmation.
     
-    let confirmMessage = `Bạn có chắc chắn muốn xóa ${ids.length} lớp học đã chọn?`;
-    if (ids.length === 1 && classNames.length === 1) {
-        confirmMessage = `Bạn có chắc chắn muốn xóa lớp "${classNames[0]}"?`;
-    }
-
-    const studentWarning = studentsToUpdate.length > 0 
-      ? ` Thao tác này sẽ khiến ${studentsToUpdate.length} học sinh bị mất liên kết lớp.`
-      : '';
-
-    if (!window.confirm(confirmMessage + studentWarning)) return;
-
     try {
         // Step 1: Un-assign students in batches
         for (let i = 0; i < studentsToUpdate.length; i += 499) {
