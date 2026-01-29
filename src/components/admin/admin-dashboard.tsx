@@ -153,7 +153,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   }, [classes, selectedClassId]);
 
-  const UserTable: React.FC<{ users: User[]; onDeleteUser: (user: User) => Promise<void>; }> = ({ users, onDeleteUser }) => (
+  const UserTable: React.FC<{ users: User[]; onDeleteUser: (user: User) => Promise<void>; canDelete?: boolean; }> = ({ users, onDeleteUser, canDelete = true }) => (
     <Table>
       <TableBody>
         {users.map(user => (
@@ -165,15 +165,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <div className="text-xs text-muted-foreground font-mono mt-1">Mật khẩu: <span className="font-bold text-foreground">{user.password}</span></div>
               )}
             </TableCell>
-            <TableCell className="text-right">
+            {canDelete && <TableCell className="text-right">
               <Button variant="ghost" size="icon" onClick={() => onDeleteUser(user)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full">
                 <Trash2 className="h-4 w-4" />
               </Button>
-            </TableCell>
+            </TableCell>}
           </TableRow>
         ))}
         {users.length === 0 && (
-          <TableRow><TableCell colSpan={2} className="h-24 text-center text-muted-foreground">Không có người dùng trong danh sách này.</TableCell></TableRow>
+          <TableRow><TableCell colSpan={canDelete ? 2 : 1} className="h-24 text-center text-muted-foreground">Không có người dùng trong danh sách này.</TableCell></TableRow>
         )}
       </TableBody>
     </Table>
@@ -262,6 +262,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <UserTable 
                     users={selectedClassId === 'unassigned' ? unassignedStudents : studentsByClass[selectedClassId] || []} 
                     onDeleteUser={onDeleteUser}
+                    canDelete={false}
                   />
                 )}
               </TabsContent>
