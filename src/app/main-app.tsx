@@ -362,11 +362,6 @@ const MainApp: React.FC = () => {
     }
   };
 
-  const handleDeleteClass = async (id: string) => {
-    await handleDeleteClasses([id]);
-  };
-
-
   const handleDeleteAssignment = async (id: string) => {
     if (!firestore) {
       toast({ variant: 'destructive', title: 'Lỗi hệ thống', description: 'Không thể kết nối tới cơ sở dữ liệu.' });
@@ -406,7 +401,6 @@ const MainApp: React.FC = () => {
                 onDeleteUsers={handleDeleteUsers}
                 onAddClass={async (c) => await saveData(COLLECTIONS.CLASSES, c.id, c)}
                 onUpdateClass={async (c) => await saveData(COLLECTIONS.CLASSES, c.id, c)}
-                onDeleteClass={handleDeleteClass}
                 onDeleteClasses={handleDeleteClasses}
                 onExport={handleExportData}
                 onImport={handleImportData}

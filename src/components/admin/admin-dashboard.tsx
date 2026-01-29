@@ -26,7 +26,6 @@ interface AdminDashboardProps {
   onDeleteUsers: (ids: string[]) => Promise<void>;
   onAddClass: (cls: Class) => Promise<void>;
   onUpdateClass: (cls: Class) => Promise<void>;
-  onDeleteClass: (id: string) => Promise<void>;
   onDeleteClasses: (ids: string[]) => Promise<void>;
   onExport: () => void;
   onImport: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -40,7 +39,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onDeleteUsers,
   onAddClass,
   onUpdateClass,
-  onDeleteClass,
   onDeleteClasses,
   onExport,
   onImport,
@@ -556,9 +554,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     <TableCell className="text-right">
                        <Button variant="ghost" size="icon" onClick={() => handleOpenEditClassModal(cls)} className="text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full">
                         <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => onDeleteClass(cls.id)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full">
-                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </TableCell>
                   </TableRow>
