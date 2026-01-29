@@ -11,11 +11,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Trash2, Upload, Download, UserPlus, Pencil } from 'lucide-react';
+import { Plus, Trash2, Upload, Download, UserPlus, Pencil, MoreHorizontal } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 
 interface AdminDashboardProps {
@@ -402,10 +403,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 <div className="text-xs text-muted-foreground font-mono mt-1">Mật khẩu: <span className="font-bold text-foreground">{user.password}</span></div>
                               )}
                             </TableCell>
+                            <TableCell className="text-right">
+                              <Button variant="ghost" size="icon" onClick={() => onDeleteUser(user)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
                           </TableRow>
                         ))}
                          {headTeachers.length === 0 && (
-                          <TableRow><TableCell colSpan={2} className="h-24 text-center text-muted-foreground">Không có giáo viên chủ nhiệm.</TableCell></TableRow>
+                          <TableRow><TableCell colSpan={3} className="h-24 text-center text-muted-foreground">Không có giáo viên chủ nhiệm.</TableCell></TableRow>
                         )}
                       </TableBody>
                     </Table>
@@ -430,10 +436,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 <div className="text-xs text-muted-foreground font-mono mt-1">Mật khẩu: <span className="font-bold text-foreground">{user.password}</span></div>
                               )}
                             </TableCell>
+                            <TableCell className="text-right">
+                              <Button variant="ghost" size="icon" onClick={() => onDeleteUser(user)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
                           </TableRow>
                         ))}
                          {subjectTeachers.length === 0 && (
-                            <TableRow><TableCell colSpan={2} className="h-24 text-center text-muted-foreground">Không có giáo viên bộ môn.</TableCell></TableRow>
+                            <TableRow><TableCell colSpan={3} className="h-24 text-center text-muted-foreground">Không có giáo viên bộ môn.</TableCell></TableRow>
                         )}
                       </TableBody>
                     </Table>
@@ -552,9 +563,40 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     <TableCell className="font-medium">{cls.name}</TableCell>
                     <TableCell>{users.find(u => u.id === cls.teacherId)?.fullName || 'Chưa gán'}</TableCell>
                     <TableCell className="text-right">
-                       <Button variant="ghost" size="icon" onClick={() => handleOpenEditClassModal(cls)} className="text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full">
-                        <Pencil className="h-4 w-4" />
-                      </Button>
+                      <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <span className="sr-only">Mở menu</span>
+                                  <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleOpenEditClassModal(cls)}>
+                                  <Pencil className="mr-2 h-4 w-4" />
+                                  Chỉnh sửa
+                              </DropdownMenuItem>
+                              <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                      <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                          <Trash2 className="mr-2 h-4 w-4" />
+                                          Xóa
+                                      </DropdownMenuItem>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                          <AlertDialogTitle>Bạn chắc chắn muốn xóa lớp "{cls.name}"?</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                              Thao tác này sẽ xóa vĩnh viễn lớp học và gỡ liên kết của tất cả học sinh trong lớp. Thao tác này không thể hoàn tác.
+                                          </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                          <AlertDialogCancel>Hủy</AlertDialogCancel>
+                                          <AlertDialogAction onClick={() => onDeleteClasses([cls.id])} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Xóa</AlertDialogAction>
+                                      </AlertDialogFooter>
+                                  </AlertDialogContent>
+                              </AlertDialog>
+                          </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}
