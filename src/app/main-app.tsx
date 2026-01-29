@@ -305,29 +305,65 @@ const MainApp: React.FC = () => {
     }
   };
 
-  const handleDeleteClass = async (id: string) => {
+  const handleDeleteClasses = async (ids: string[]) => {
     if (!firestore) {
       toast({ variant: 'destructive', title: 'Lỗi hệ thống', description: 'Không thể kết nối tới cơ sở dữ liệu.' });
       return;
     }
-    const className = classes.find(c => c.id === id)?.name ?? '';
-    const classStudents = users.filter(u => u.classId === id);
+    if (ids.length === 0) return;
 
-    let confirmMessage = `Bạn có chắc chắn muốn xóa lớp "${className}"?`;
-    if (classStudents.length > 0) {
-      confirmMessage += ` Thao tác này sẽ khiến ${classStudents.length} học sinh trong lớp bị mất liên kết.`;
+    const studentsToUpdate = users.filter(u => u.classId && ids.includes(u.classId));
+    
+    const classNames = ids.map(id => classes.find(c => c.id === id)?.name).filter(Boolean);
+    
+    let confirmMessage = `Bạn có chắc chắn muốn xóa ${ids.length} lớp học đã chọn?`;
+    if (ids.length === 1 && classNames.length === 1) {
+        confirmMessage = `Bạn có chắc chắn muốn xóa lớp "${classNames[0]}"?`;
     }
 
-    if (window.confirm(confirmMessage)) {
-       try {
-        const classRef = doc(firestore, COLLECTIONS.CLASSES, id);
-        await deleteDoc(classRef);
-        toast({ description: 'Đã xóa lớp học.' });
-      } catch (error) {
-        console.error(`Error deleting class ${id}:`, error);
-        toast({ variant: 'destructive', title: 'Lỗi', description: `Không thể xóa lớp. Vui lòng thử lại.` });
-      }
+    const studentWarning = studentsToUpdate.length > 0 
+      ? ` Thao tác này sẽ khiến ${studentsToUpdate.length} học sinh bị mất liên kết lớp.`
+      : '';
+
+    if (!window.confirm(confirmMessage + studentWarning)) return;
+
+    try {
+        // Step 1: Un-assign students in batches
+        for (let i = 0; i < studentsToUpdate.length; i += 499) {
+            const studentBatch = writeBatch(firestore);
+            const chunk = studentsToUpdate.slice(i, i + 499);
+            chunk.forEach(student => {
+                const studentRef = doc(firestore, COLLECTIONS.USERS, student.id);
+                studentBatch.update(studentRef, { classId: deleteField() });
+            });
+            await studentBatch.commit();
+        }
+
+        // Step 2: Delete classes in batches
+        for (let i = 0; i < ids.length; i += 499) {
+            const classBatch = writeBatch(firestore);
+            const chunk = ids.slice(i, i + 499);
+            chunk.forEach(id => {
+                const classRef = doc(firestore, COLLECTIONS.CLASSES, id);
+                classBatch.delete(classRef);
+            });
+            await classBatch.commit();
+        }
+        
+        toast({ description: `Đã xóa ${ids.length} lớp học.` });
+
+    } catch (error) {
+        console.error('Error during bulk class delete:', error);
+        toast({
+            variant: 'destructive',
+            title: 'Lỗi xóa lớp',
+            description: 'Đã xảy ra lỗi khi xóa lớp học. Vui lòng thử lại.'
+        });
     }
+  };
+
+  const handleDeleteClass = async (id: string) => {
+    await handleDeleteClasses([id]);
   };
 
 
@@ -371,6 +407,7 @@ const MainApp: React.FC = () => {
                 onAddClass={async (c) => await saveData(COLLECTIONS.CLASSES, c.id, c)}
                 onUpdateClass={async (c) => await saveData(COLLECTIONS.CLASSES, c.id, c)}
                 onDeleteClass={handleDeleteClass}
+                onDeleteClasses={handleDeleteClasses}
                 onExport={handleExportData}
                 onImport={handleImportData}
               />

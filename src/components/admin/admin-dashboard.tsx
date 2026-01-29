@@ -27,6 +27,7 @@ interface AdminDashboardProps {
   onAddClass: (cls: Class) => Promise<void>;
   onUpdateClass: (cls: Class) => Promise<void>;
   onDeleteClass: (id: string) => Promise<void>;
+  onDeleteClasses: (ids: string[]) => Promise<void>;
   onExport: () => void;
   onImport: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
@@ -40,6 +41,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onAddClass,
   onUpdateClass,
   onDeleteClass,
+  onDeleteClasses,
   onExport,
   onImport,
 }) => {
@@ -68,6 +70,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   
   // Teacher selection state
   const [selectedTeachers, setSelectedTeachers] = useState<string[]>([]);
+  
+  // Class selection state
+  const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
 
 
   const handleAddUser = async (e: React.FormEvent) => {
@@ -154,6 +159,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     const allTeacherIds = allTeachers.map(t => t.id);
     await onDeleteUsers(allTeacherIds);
     setSelectedTeachers([]);
+  };
+  
+  const handleToggleClassSelection = (classId: string) => {
+    setSelectedClasses(prev => 
+      prev.includes(classId) 
+        ? prev.filter(id => id !== classId)
+        : [...prev, classId]
+    );
+  };
+  
+  const handleBulkDeleteClasses = async () => {
+    await onDeleteClasses(selectedClasses);
+    setSelectedClasses([]);
+  };
+
+  const handleDeleteAllClasses = async () => {
+    const allClassIds = classes.map(c => c.id);
+    await onDeleteClasses(allClassIds);
+    setSelectedClasses([]);
   };
 
   // Data processing for user roles
@@ -450,10 +474,68 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </DialogContent>
             </Dialog>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-end gap-2">
+              {selectedClasses.length > 0 && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive">
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Xóa đã chọn ({selectedClasses.length})
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Bạn chắc chắn muốn xóa {selectedClasses.length} lớp đã chọn?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Thao tác này sẽ xóa vĩnh viễn các lớp đã chọn và gỡ liên kết của tất cả học sinh trong các lớp đó. Thao tác này không thể hoàn tác.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Hủy</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleBulkDeleteClasses} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Xóa</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    disabled={classes.length === 0}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Xóa tất cả
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Bạn chắc chắn muốn xóa tất cả {classes.length} lớp học?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Thao tác này sẽ xóa vĩnh viễn toàn bộ lớp học và gỡ liên kết của tất cả học sinh trong các lớp đó. Thao tác này không thể hoàn tác.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Hủy</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteAllClasses} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Xóa tất cả</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
              <Table>
               <TableHeader>
                 <TableRow>
+                   <TableHead className="w-12">
+                     <Checkbox
+                        id="select-all-classes"
+                        checked={selectedClasses.length > 0 && selectedClasses.length === classes.length}
+                        onCheckedChange={(checked) =>
+                          setSelectedClasses(checked ? classes.map((c) => c.id) : [])
+                        }
+                        aria-label="Chọn tất cả lớp học"
+                      />
+                  </TableHead>
                   <TableHead>Tên lớp</TableHead>
                   <TableHead>Giáo viên</TableHead>
                   <TableHead className="text-right">Hành động</TableHead>
@@ -461,7 +543,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </TableHeader>
               <TableBody>
                 {classes.map(cls => (
-                  <TableRow key={cls.id}>
+                  <TableRow key={cls.id} data-state={selectedClasses.includes(cls.id) ? 'selected' : ''}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedClasses.includes(cls.id)}
+                        onCheckedChange={() => handleToggleClassSelection(cls.id)}
+                        aria-label={`Chọn lớp ${cls.name}`}
+                      />
+                    </TableCell>
                     <TableCell className="font-medium">{cls.name}</TableCell>
                     <TableCell>{users.find(u => u.id === cls.teacherId)?.fullName || 'Chưa gán'}</TableCell>
                     <TableCell className="text-right">
@@ -474,6 +563,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </TableCell>
                   </TableRow>
                 ))}
+                 {classes.length === 0 && (
+                    <TableRow><TableCell colSpan={4} className="h-24 text-center text-muted-foreground">Không có lớp học nào.</TableCell></TableRow>
+                )}
               </TableBody>
             </Table>
             <Dialog open={isClassEditModalOpen} onOpenChange={setClassEditModalOpen}>
