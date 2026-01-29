@@ -12,6 +12,17 @@ import { ArrowLeft, Plus, Sparkles, Trash2, User as UserIcon } from 'lucide-reac
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface ClassRosterProps {
   currentUser: User;
@@ -81,16 +92,24 @@ const ClassRoster: React.FC<ClassRosterProps> = ({
     setIsParsing(false);
   }
 
-  const handleBulkDelete = async () => {
-    if (window.confirm(`Bạn có chắc chắn muốn xóa ${selectedStudents.length} học sinh đã chọn? Thao tác này không thể hoàn tác.`)) {
-      try {
-        await onDeleteStudents(selectedStudents);
-        setSelectedStudents([]);
-      } catch(error) {
-        // The error toast is handled by the parent component.
-        // We just need to catch the re-thrown error here to prevent an unhandled promise rejection.
-        console.error("Bulk delete failed:", error);
-      }
+  const handleConfirmBulkDelete = async () => {
+    try {
+      await onDeleteStudents(selectedStudents);
+      setSelectedStudents([]);
+    } catch(error) {
+      // The error toast is handled by the parent component.
+      console.error("Bulk delete failed:", error);
+    }
+  };
+
+  const handleConfirmDeleteAll = async () => {
+    try {
+      const allStudentIds = students.map(s => s.id);
+      await onDeleteStudents(allStudentIds);
+      setSelectedStudents([]);
+    } catch(error) {
+      // The error toast is handled by the parent component.
+      console.error("Delete all students failed:", error);
     }
   };
 
@@ -173,12 +192,55 @@ const ClassRoster: React.FC<ClassRosterProps> = ({
       <Card className="rounded-3xl shadow-lg shadow-primary/5">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Danh sách lớp</CardTitle>
-          {selectedStudents.length > 0 && (
-            <Button variant="destructive" onClick={handleBulkDelete}>
-              <Trash2 className="mr-2 h-4 w-4" />
-              Xóa ({selectedStudents.length})
-            </Button>
-          )}
+            <div className="flex items-center gap-2">
+                {selectedStudents.length > 0 && (
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Xóa đã chọn ({selectedStudents.length})
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Bạn chắc chắn muốn xóa {selectedStudents.length} học sinh đã chọn?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Thao tác này không thể hoàn tác.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Hủy</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleConfirmBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Xóa</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                )}
+
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button
+                            variant="outline"
+                            className="border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            disabled={students.length === 0}
+                        >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Xóa tất cả
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Bạn chắc chắn muốn xóa tất cả học sinh?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Thao tác này sẽ xóa vĩnh viễn toàn bộ {students.length} học sinh khỏi lớp. Thao tác này không thể hoàn tác.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Hủy</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleConfirmDeleteAll} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Xóa tất cả</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </div>
         </CardHeader>
         <CardContent className="p-0">
           {students.length > 0 && (
