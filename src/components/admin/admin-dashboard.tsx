@@ -380,15 +380,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 <div className="text-xs text-muted-foreground font-mono mt-1">Mật khẩu: <span className="font-bold text-foreground">{user.password}</span></div>
                               )}
                             </TableCell>
-                            <TableCell className="text-right">
-                              <Button variant="ghost" size="icon" onClick={() => onDeleteUser(user)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
                           </TableRow>
                         ))}
                          {headTeachers.length === 0 && (
-                          <TableRow><TableCell colSpan={3} className="h-24 text-center text-muted-foreground">Không có giáo viên chủ nhiệm.</TableCell></TableRow>
+                          <TableRow><TableCell colSpan={2} className="h-24 text-center text-muted-foreground">Không có giáo viên chủ nhiệm.</TableCell></TableRow>
                         )}
                       </TableBody>
                     </Table>
@@ -413,15 +408,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 <div className="text-xs text-muted-foreground font-mono mt-1">Mật khẩu: <span className="font-bold text-foreground">{user.password}</span></div>
                               )}
                             </TableCell>
-                            <TableCell className="text-right">
-                              <Button variant="ghost" size="icon" onClick={() => onDeleteUser(user)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
                           </TableRow>
                         ))}
                          {subjectTeachers.length === 0 && (
-                            <TableRow><TableCell colSpan={3} className="h-24 text-center text-muted-foreground">Không có giáo viên bộ môn.</TableCell></TableRow>
+                            <TableRow><TableCell colSpan={2} className="h-24 text-center text-muted-foreground">Không có giáo viên bộ môn.</TableCell></TableRow>
                         )}
                       </TableBody>
                     </Table>
