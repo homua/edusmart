@@ -259,29 +259,47 @@ const MainApp: React.FC = () => {
     }
   };
 
-  const handleDeleteStudents = async (ids: string[]): Promise<void> => {
+  const handleDeleteUsers = async (ids: string[]): Promise<void> => {
      if (!firestore) {
         toast({ variant: 'destructive', title: 'Lỗi hệ thống', description: 'Không thể kết nối tới cơ sở dữ liệu.'});
         throw new Error('Firestore service not available.');
      }
+
+    const filteredIds = ids.filter(id => id !== currentUser?.id);
+    if (filteredIds.length < ids.length && ids.includes(currentUser?.id || '')) {
+      toast({ variant: 'destructive', title: 'Thao tác bị chặn', description: 'Bạn không thể tự xóa tài khoản của mình.' });
+    }
+    if (filteredIds.length === 0) return;
+
     try {
-      const batchSize = 500;
-      for (let i = 0; i < ids.length; i += batchSize) {
+      const batchSize = 400; // Firestore batch limit is 500 operations
+      for (let i = 0; i < filteredIds.length; i += batchSize) {
         const batch = writeBatch(firestore);
-        const chunk = ids.slice(i, i + batchSize);
-        chunk.forEach(id => {
-            const docRef = doc(firestore, COLLECTIONS.USERS, id);
-            batch.delete(docRef);
-        });
+        const chunk = filteredIds.slice(i, i + batchSize);
+        const usersInChunk = chunk.map(id => users.find(u => u.id === id)).filter(Boolean) as User[];
+        
+        for (const userToDelete of usersInChunk) {
+            // If deleting a homeroom teacher, unassign them from classes
+            if (userToDelete.role === UserRole.TEACHER) {
+                const classesToUpdate = classes.filter(c => c.teacherId === userToDelete.id);
+                classesToUpdate.forEach(c => {
+                    const classRef = doc(firestore, COLLECTIONS.CLASSES, c.id);
+                    batch.update(classRef, { teacherId: deleteField() });
+                });
+            }
+            // Queue user for deletion
+            const userRef = doc(firestore, COLLECTIONS.USERS, userToDelete.id);
+            batch.delete(userRef);
+        }
         await batch.commit();
       }
-      toast({ description: `Đã xóa ${ids.length} học sinh.` });
+      toast({ description: `Đã xóa ${filteredIds.length} người dùng.` });
     } catch(error) {
-      console.error('Failed to delete students:', error);
+      console.error('Failed to bulk delete users:', error);
       toast({
         variant: 'destructive',
         title: 'Lỗi xóa hàng loạt',
-        description: 'Đã xảy ra lỗi khi xóa học sinh.'
+        description: 'Đã xảy ra lỗi khi xóa người dùng.'
       });
       throw error;
     }
@@ -349,6 +367,7 @@ const MainApp: React.FC = () => {
                 classes={classes}
                 onAddUser={async (u) => await saveData(COLLECTIONS.USERS, u.id, u)}
                 onDeleteUser={handleDeleteUser}
+                onDeleteUsers={handleDeleteUsers}
                 onAddClass={async (c) => await saveData(COLLECTIONS.CLASSES, c.id, c)}
                 onUpdateClass={async (c) => await saveData(COLLECTIONS.CLASSES, c.id, c)}
                 onDeleteClass={handleDeleteClass}
@@ -405,7 +424,7 @@ const MainApp: React.FC = () => {
                   classes={classes}
                   students={users.filter(u => u.role === UserRole.STUDENT && u.classId === currentUser.classId)}
                   onBack={() => navigate('TEACHER_DASHBOARD')}
-                  onDeleteStudents={handleDeleteStudents}
+                  onDeleteStudents={handleDeleteUsers}
                   onAddStudents={async (names) => {
                     if (!currentUser?.classId) return;
                     for (const name of names) {
@@ -479,5 +498,3 @@ const MainApp: React.FC = () => {
 };
 
 export default MainApp;
-
-    

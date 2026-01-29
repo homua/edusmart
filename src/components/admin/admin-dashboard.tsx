@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -13,12 +14,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Trash2, Upload, Download, UserPlus, Pencil } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+
 
 interface AdminDashboardProps {
   users: User[];
   classes: Class[];
   onAddUser: (user: User) => Promise<void>;
   onDeleteUser: (user: User) => Promise<void>;
+  onDeleteUsers: (ids: string[]) => Promise<void>;
   onAddClass: (cls: Class) => Promise<void>;
   onUpdateClass: (cls: Class) => Promise<void>;
   onDeleteClass: (id: string) => Promise<void>;
@@ -31,6 +36,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   classes,
   onAddUser,
   onDeleteUser,
+  onDeleteUsers,
   onAddClass,
   onUpdateClass,
   onDeleteClass,
@@ -59,6 +65,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   // Student list state
   const [selectedClassId, setSelectedClassId] = useState<string>('');
+  
+  // Teacher selection state
+  const [selectedTeachers, setSelectedTeachers] = useState<string[]>([]);
+
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,6 +135,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     toast({ description: 'Đã cập nhật lớp học.' });
     setClassEditModalOpen(false);
     setClassToEdit(null);
+  };
+
+  const handleToggleTeacherSelection = (teacherId: string) => {
+    setSelectedTeachers(prev => 
+      prev.includes(teacherId) 
+        ? prev.filter(id => id !== teacherId)
+        : [...prev, teacherId]
+    );
+  };
+  
+  const handleBulkDeleteTeachers = async () => {
+    await onDeleteUsers(selectedTeachers);
+    setSelectedTeachers([]);
+  };
+
+  const handleDeleteAllTeachers = async () => {
+    const allTeacherIds = allTeachers.map(t => t.id);
+    await onDeleteUsers(allTeacherIds);
+    setSelectedTeachers([]);
   };
 
   // Data processing for user roles
@@ -267,14 +296,135 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 )}
               </TabsContent>
               <TabsContent value="teachers" className="mt-4 space-y-4">
+                 <div className="flex items-center justify-end gap-2">
+                    {selectedTeachers.length > 0 && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Xóa đã chọn ({selectedTeachers.length})
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Bạn chắc chắn muốn xóa {selectedTeachers.length} giáo viên đã chọn?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Nếu trong số này có giáo viên chủ nhiệm, họ sẽ bị gỡ khỏi lớp. Thao tác này không thể hoàn tác.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Hủy</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleBulkDeleteTeachers} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Xóa</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                          disabled={allTeachers.length === 0}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Xóa tất cả
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Bạn chắc chắn muốn xóa tất cả {allTeachers.length} giáo viên?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Thao tác này sẽ xóa vĩnh viễn toàn bộ giáo viên, bao gồm cả việc gỡ giáo viên chủ nhiệm khỏi lớp. Thao tác này không thể hoàn tác.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Hủy</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleDeleteAllTeachers} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Xóa tất cả</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                  {allTeachers.length > 0 && (
+                    <div className="flex items-center p-4 border-b rounded-t-lg">
+                      <Checkbox
+                        id="select-all-teachers"
+                        checked={selectedTeachers.length > 0 && selectedTeachers.length === allTeachers.length}
+                        onCheckedChange={(checked) =>
+                          setSelectedTeachers(checked ? allTeachers.map((t) => t.id) : [])
+                        }
+                      />
+                      <label
+                        htmlFor="select-all-teachers"
+                        className="ml-3 text-sm font-medium cursor-pointer"
+                      >
+                        Chọn tất cả ({allTeachers.length} giáo viên)
+                      </label>
+                    </div>
+                  )}
                  <div>
                     <h4 className="font-bold mb-2 px-1 text-primary">Giáo viên Chủ nhiệm ({headTeachers.length})</h4>
-                    <UserTable users={headTeachers} onDeleteUser={onDeleteUser} />
+                    <Table>
+                      <TableBody>
+                        {headTeachers.map(user => (
+                          <TableRow key={user.id} data-state={selectedTeachers.includes(user.id) ? 'selected' : ''}>
+                             <TableCell className="w-12">
+                              <Checkbox
+                                checked={selectedTeachers.includes(user.id)}
+                                onCheckedChange={() => handleToggleTeacherSelection(user.id)}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-medium">{user.fullName}</div>
+                              <div className="text-xs text-muted-foreground">@{user.username}</div>
+                              {user.password && (
+                                <div className="text-xs text-muted-foreground font-mono mt-1">Mật khẩu: <span className="font-bold text-foreground">{user.password}</span></div>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button variant="ghost" size="icon" onClick={() => onDeleteUser(user)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                         {headTeachers.length === 0 && (
+                          <TableRow><TableCell colSpan={3} className="h-24 text-center text-muted-foreground">Không có giáo viên chủ nhiệm.</TableCell></TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
                  </div>
                  <Separator />
                  <div>
                     <h4 className="font-bold mb-2 px-1">Giáo viên Bộ môn ({subjectTeachers.length})</h4>
-                    <UserTable users={subjectTeachers} onDeleteUser={onDeleteUser} />
+                    <Table>
+                      <TableBody>
+                        {subjectTeachers.map(user => (
+                          <TableRow key={user.id} data-state={selectedTeachers.includes(user.id) ? 'selected' : ''}>
+                            <TableCell className="w-12">
+                              <Checkbox
+                                checked={selectedTeachers.includes(user.id)}
+                                onCheckedChange={() => handleToggleTeacherSelection(user.id)}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-medium">{user.fullName}</div>
+                              <div className="text-xs text-muted-foreground">@{user.username}</div>
+                              {user.password && (
+                                <div className="text-xs text-muted-foreground font-mono mt-1">Mật khẩu: <span className="font-bold text-foreground">{user.password}</span></div>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button variant="ghost" size="icon" onClick={() => onDeleteUser(user)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                         {subjectTeachers.length === 0 && (
+                            <TableRow><TableCell colSpan={3} className="h-24 text-center text-muted-foreground">Không có giáo viên bộ môn.</TableCell></TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
                  </div>
               </TabsContent>
               <TabsContent value="admins" className="mt-4">
@@ -360,5 +510,3 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 };
 
 export default AdminDashboard;
-
-    
