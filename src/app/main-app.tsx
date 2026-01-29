@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useUser, useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { collection, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
 
 import { UserRole, type View, type Assignment, type Submission, type User, type Class } from '@/lib/types';
@@ -266,6 +266,41 @@ const MainApp: React.FC = () => {
     }
   };
 
+  const handleDeleteClass = async (id: string) => {
+    if (!firestore) {
+      toast({ variant: 'destructive', title: 'Lỗi hệ thống', description: 'Không thể kết nối tới cơ sở dữ liệu.' });
+      return;
+    }
+    const className = classes.find(c => c.id === id)?.name ?? '';
+    if (window.confirm(`Bạn có chắc chắn muốn xóa lớp "${className}"? Thao tác này sẽ khiến các học sinh trong lớp bị mất liên kết.`)) {
+      try {
+        await deleteClass(firestore, id);
+        toast({ description: 'Đã xóa lớp học.' });
+      } catch (error) {
+        console.error(`Error deleting class ${id}:`, error);
+        toast({ variant: 'destructive', title: 'Lỗi', description: `Không thể xóa lớp. Vui lòng thử lại.`});
+      }
+    }
+  };
+
+  const handleDeleteAssignment = async (id: string) => {
+    if (!firestore) {
+      toast({ variant: 'destructive', title: 'Lỗi hệ thống', description: 'Không thể kết nối tới cơ sở dữ liệu.' });
+      return;
+    }
+    const assignmentTitle = assignments.find(a => a.id === id)?.title ?? '';
+    if (window.confirm(`Bạn có chắc chắn muốn xóa bài tập "${assignmentTitle}"?`)) {
+      try {
+        await deleteAssignment(firestore, id);
+        toast({ description: 'Đã xóa bài tập.'});
+      } catch (error) {
+        console.error(`Error deleting assignment ${id}:`, error);
+        toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể xóa bài tập. Vui lòng thử lại.'});
+      }
+    }
+  };
+
+
   const renderContent = () => {
     if (view === 'HOME' && !currentUser) {
       return <LandingPage onNavigate={() => navigate('AUTH')} />;
@@ -285,22 +320,7 @@ const MainApp: React.FC = () => {
                 onDeleteUser={handleDeleteUser}
                 onAddClass={async (c) => await saveData(COLLECTIONS.CLASSES, c.id, c)}
                 onUpdateClass={async (c) => await saveData(COLLECTIONS.CLASSES, c.id, c)}
-                onDeleteClass={async (id) => {
-                  if (!firestore) {
-                      toast({ variant: 'destructive', title: 'Lỗi hệ thống', description: 'Không thể kết nối tới cơ sở dữ liệu.' });
-                      return;
-                  }
-                  const className = classes.find(c => c.id === id)?.name ?? '';
-                  if (window.confirm(`Bạn có chắc chắn muốn xóa lớp "${className}"? Thao tác này sẽ khiến các học sinh trong lớp bị mất liên kết.`)) {
-                    try {
-                      await deleteClass(firestore, id);
-                      toast({ description: 'Đã xóa lớp học.' });
-                    } catch (error) {
-                      console.error(`Error deleting class ${id}:`, error);
-                      toast({ variant: 'destructive', title: 'Lỗi', description: `Không thể xóa lớp. Vui lòng thử lại.`});
-                    }
-                  }
-                }}
+                onDeleteClass={handleDeleteClass}
                 onExport={handleExportData}
                 onImport={handleImportData}
               />
@@ -320,22 +340,7 @@ const MainApp: React.FC = () => {
                   onCreateNew={() => navigate('CREATE_ASSIGNMENT')}
                   onViewReport={(a) => navigate('VIEW_REPORT', a)}
                   onEdit={(a) => navigate('EDIT_ASSIGNMENT', a)}
-                  onDelete={async (id) => {
-                     if (!firestore) {
-                           toast({ variant: 'destructive', title: 'Lỗi hệ thống', description: 'Không thể kết nối tới cơ sở dữ liệu.' });
-                           return;
-                        }
-                    const assignmentTitle = assignments.find(a => a.id === id)?.title ?? '';
-                     if (window.confirm(`Bạn có chắc chắn muốn xóa bài tập "${assignmentTitle}"?`)) {
-                        try {
-                           await deleteAssignment(firestore, id);
-                           toast({ description: 'Đã xóa bài tập.'});
-                        } catch (error) {
-                           console.error(`Error deleting assignment ${id}:`, error);
-                           toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể xóa bài tập. Vui lòng thử lại.'});
-                        }
-                     }
-                  }}
+                  onDelete={handleDeleteAssignment}
                   onViewRoster={() => navigate('CLASS_ROSTER')}
                 />
               );
