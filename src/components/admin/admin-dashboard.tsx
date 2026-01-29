@@ -152,12 +152,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setSelectedTeachers([]);
   };
 
-  const handleDeleteAllTeachers = async () => {
-    const allTeacherIds = allTeachers.map(t => t.id);
-    await onDeleteUsers(allTeacherIds);
-    setSelectedTeachers([]);
-  };
-  
   const handleToggleClassSelection = (classId: string) => {
     setSelectedClasses(prev => 
       prev.includes(classId) 
@@ -168,12 +162,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   
   const handleBulkDeleteClasses = async () => {
     await onDeleteClasses(selectedClasses);
-    setSelectedClasses([]);
-  };
-
-  const handleDeleteAllClasses = async () => {
-    const allClassIds = classes.map(c => c.id);
-    await onDeleteClasses(allClassIds);
     setSelectedClasses([]);
   };
 
@@ -340,30 +328,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         </AlertDialogContent>
                       </AlertDialog>
                     )}
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                          disabled={allTeachers.length === 0}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Xóa tất cả
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Bạn chắc chắn muốn xóa tất cả {allTeachers.length} giáo viên?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Thao tác này sẽ xóa vĩnh viễn toàn bộ giáo viên, bao gồm cả việc gỡ giáo viên chủ nhiệm khỏi lớp. Thao tác này không thể hoàn tác.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Hủy</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleDeleteAllTeachers} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Xóa tất cả</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
                   </div>
                   {allTeachers.length > 0 && (
                     <div className="flex items-center p-4 border-b rounded-t-lg">
@@ -402,9 +366,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               )}
                             </TableCell>
                             <TableCell className="text-right">
-                              <Button variant="ghost" size="icon" onClick={() => onDeleteUser(user)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              <div className="flex items-center justify-end gap-2">
+                                <Button variant="ghost" size="icon" onClick={() => onDeleteUser(user)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -435,9 +401,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               )}
                             </TableCell>
                             <TableCell className="text-right">
-                              <Button variant="ghost" size="icon" onClick={() => onDeleteUser(user)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              <div className="flex items-center justify-end gap-2">
+                                <Button variant="ghost" size="icon" onClick={() => onDeleteUser(user)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -505,30 +473,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </AlertDialogContent>
                 </AlertDialog>
               )}
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                    disabled={classes.length === 0}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Xóa tất cả
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Bạn chắc chắn muốn xóa tất cả {classes.length} lớp học?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Thao tác này sẽ xóa vĩnh viễn toàn bộ lớp học và gỡ liên kết của tất cả học sinh trong các lớp đó. Thao tác này không thể hoàn tác.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Hủy</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDeleteAllClasses} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Xóa tất cả</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
             </div>
              <Table>
               <TableHeader>

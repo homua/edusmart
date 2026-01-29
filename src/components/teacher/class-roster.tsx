@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -97,17 +98,6 @@ const ClassRoster: React.FC<ClassRosterProps> = ({
     } catch(error) {
       // The error toast is handled by the parent component.
       console.error("Bulk delete failed:", error);
-    }
-  };
-
-  const handleConfirmDeleteAll = async () => {
-    try {
-      const allStudentIds = students.map(s => s.id);
-      await onDeleteStudents(allStudentIds);
-      setSelectedStudents([]);
-    } catch(error) {
-      // The error toast is handled by the parent component.
-      console.error("Delete all students failed:", error);
     }
   };
 
@@ -213,31 +203,6 @@ const ClassRoster: React.FC<ClassRosterProps> = ({
                         </AlertDialogContent>
                     </AlertDialog>
                 )}
-
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button
-                            variant="outline"
-                            className="border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                            disabled={students.length === 0}
-                        >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Xóa tất cả
-                        </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Bạn chắc chắn muốn xóa tất cả học sinh?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Thao tác này sẽ xóa vĩnh viễn toàn bộ {students.length} học sinh khỏi lớp. Thao tác này không thể hoàn tác.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Hủy</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleConfirmDeleteAll} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Xóa tất cả</AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
             </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -291,3 +256,5 @@ const ClassRoster: React.FC<ClassRosterProps> = ({
 };
 
 export default ClassRoster;
+
+    
