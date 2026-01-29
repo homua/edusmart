@@ -62,14 +62,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [editClassName, setEditClassName] = useState('');
   const [editTeacherId, setEditTeacherId] = useState('');
 
-  // Student list state
+  // Selection states
   const [selectedClassId, setSelectedClassId] = useState<string>('');
-  
-  // Teacher selection state
   const [selectedTeachers, setSelectedTeachers] = useState<string[]>([]);
-  
-  // Class selection state
   const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
+  const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
 
 
   const handleAddUser = async (e: React.FormEvent) => {
@@ -165,6 +162,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setSelectedClasses([]);
   };
 
+  const handleToggleStudentSelection = (studentId: string) => {
+    setSelectedStudents(prev =>
+        prev.includes(studentId)
+            ? prev.filter(id => id !== studentId)
+            : [...prev, studentId]
+    );
+  };
+
+  const handleBulkDeleteStudents = async () => {
+      await onDeleteUsers(selectedStudents);
+      setSelectedStudents([]);
+  };
+
+
   // Data processing for user roles
   const admins = users.filter(u => u.role === 'ADMIN');
   const allTeachers = users.filter(u => u.role === 'TEACHER');
@@ -191,31 +202,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   }, [classes, selectedClassId]);
 
-  const UserTable: React.FC<{ users: User[]; onDeleteUser: (user: User) => Promise<void>; canDelete?: boolean; }> = ({ users, onDeleteUser, canDelete = true }) => (
-    <Table>
-      <TableBody>
-        {users.map(user => (
-          <TableRow key={user.id}>
-            <TableCell>
-              <div className="font-medium">{user.fullName}</div>
-              <div className="text-xs text-muted-foreground">@{user.username}</div>
-              {user.password && (
-                <div className="text-xs text-muted-foreground font-mono mt-1">Mật khẩu: <span className="font-bold text-foreground">{user.password}</span></div>
-              )}
-            </TableCell>
-            {canDelete && <TableCell className="text-right">
-              <Button variant="ghost" size="icon" onClick={() => onDeleteUser(user)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full">
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </TableCell>}
-          </TableRow>
-        ))}
-        {users.length === 0 && (
-          <TableRow><TableCell colSpan={canDelete ? 2 : 1} className="h-24 text-center text-muted-foreground">Không có người dùng trong danh sách này.</TableCell></TableRow>
-        )}
-      </TableBody>
-    </Table>
-  );
+  useEffect(() => {
+      setSelectedStudents([]);
+  }, [selectedClassId]);
+
+  const currentStudentList = selectedClassId ? (selectedClassId === 'unassigned' ? unassignedStudents : studentsByClass[selectedClassId] || []) : [];
+
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -296,13 +288,92 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </SelectContent>
                 </Select>
                 
-                {selectedClassId && (
-                  <UserTable 
-                    users={selectedClassId === 'unassigned' ? unassignedStudents : studentsByClass[selectedClassId] || []} 
-                    onDeleteUser={onDeleteUser}
-                    canDelete={true}
-                  />
-                )}
+                <div className="flex items-center justify-end gap-2">
+                    {selectedStudents.length > 0 && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Xóa đã chọn ({selectedStudents.length})
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Bạn chắc chắn muốn xóa {selectedStudents.length} học sinh đã chọn?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Thao tác này không thể hoàn tác.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Hủy</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleBulkDeleteStudents} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Xóa</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                </div>
+
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="w-12">
+                                <Checkbox
+                                    checked={selectedStudents.length > 0 && currentStudentList.length > 0 && selectedStudents.length === currentStudentList.length}
+                                    onCheckedChange={(checked) =>
+                                        setSelectedStudents(checked ? currentStudentList.map((s) => s.id) : [])
+                                    }
+                                    aria-label="Chọn tất cả học sinh"
+                                />
+                            </TableHead>
+                            <TableHead>Học sinh</TableHead>
+                            <TableHead className="text-right">Hành động</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {currentStudentList.map(user => (
+                            <TableRow key={user.id} data-state={selectedStudents.includes(user.id) ? 'selected' : ''}>
+                                <TableCell>
+                                    <Checkbox
+                                        checked={selectedStudents.includes(user.id)}
+                                        onCheckedChange={() => handleToggleStudentSelection(user.id)}
+                                        aria-label={`Chọn học sinh ${user.fullName}`}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <div className="font-medium">{user.fullName}</div>
+                                    <div className="text-xs text-muted-foreground">@{user.username}</div>
+                                    {user.password && (
+                                        <div className="text-xs text-muted-foreground font-mono mt-1">Mật khẩu: <span className="font-bold text-foreground">{user.password}</span></div>
+                                    )}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full">
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Bạn chắc chắn muốn xóa người dùng "{user.fullName}"?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Thao tác này không thể hoàn tác.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Hủy</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => onDeleteUser(user)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Xóa</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                        {currentStudentList.length === 0 && (
+                            <TableRow><TableCell colSpan={3} className="h-24 text-center text-muted-foreground">Không có học sinh trong danh sách này.</TableCell></TableRow>
+                        )}
+                    </TableBody>
+                </Table>
               </TabsContent>
               <TabsContent value="teachers" className="mt-4 space-y-4">
                  <div className="flex items-center justify-end gap-2">
@@ -411,7 +482,45 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                  </div>
               </TabsContent>
               <TabsContent value="admins" className="mt-4">
-                <UserTable users={admins} onDeleteUser={onDeleteUser} />
+                <Table>
+                  <TableBody>
+                    {admins.map(user => (
+                      <TableRow key={user.id}>
+                        <TableCell>
+                          <div className="font-medium">{user.fullName}</div>
+                          <div className="text-xs text-muted-foreground">@{user.username}</div>
+                          {user.password && (
+                            <div className="text-xs text-muted-foreground font-mono mt-1">Mật khẩu: <span className="font-bold text-foreground">{user.password}</span></div>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full">
+                                      <Trash2 className="h-4 w-4" />
+                                  </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                      <AlertDialogTitle>Bạn chắc chắn muốn xóa người dùng "{user.fullName}"?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                          Thao tác này không thể hoàn tác.
+                                      </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                      <AlertDialogCancel>Hủy</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => onDeleteUser(user)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Xóa</AlertDialogAction>
+                                  </AlertDialogFooter>
+                              </AlertDialogContent>
+                          </AlertDialog>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {admins.length === 0 && (
+                      <TableRow><TableCell colSpan={2} className="h-24 text-center text-muted-foreground">Không có người dùng trong danh sách này.</TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
               </TabsContent>
             </Tabs>
           </CardContent>
@@ -555,5 +664,3 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 };
 
 export default AdminDashboard;
-
-    
