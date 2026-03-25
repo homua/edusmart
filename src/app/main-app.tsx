@@ -314,9 +314,6 @@ const MainApp: React.FC = () => {
 
     const studentsToUpdate = users.filter(u => u.classId && ids.includes(u.classId));
     
-    // The confirmation is now handled in the AdminDashboard component's AlertDialog.
-    // This removes the potentially confusing double confirmation.
-    
     try {
         // Step 1: Un-assign students in batches
         for (let i = 0; i < studentsToUpdate.length; i += 499) {
@@ -407,7 +404,7 @@ const MainApp: React.FC = () => {
                   submissions={submissions}
                   currentUser={currentUser}
                   classes={classes}
-                  students={users.filter(u => u.role === UserRole.STUDENT && u.classId === currentUser.classId)}
+                  students={users.filter(u => u.role === UserRole.STUDENT)}
                   onCreateNew={() => navigate('CREATE_ASSIGNMENT')}
                   onViewReport={(a) => navigate('VIEW_REPORT', a)}
                   onEdit={(a) => navigate('EDIT_ASSIGNMENT', a)}
@@ -420,7 +417,7 @@ const MainApp: React.FC = () => {
               return (
                 <AssignmentForm
                   teacherId={currentUser.id}
-                  classes={classes.filter(c => c.teacherId === currentUser.id)}
+                  classes={classes}
                   assignmentToEdit={currentAssignment}
                   onSave={async (a) => {
                     await saveData(COLLECTIONS.ASSIGNMENTS, a.id, a);

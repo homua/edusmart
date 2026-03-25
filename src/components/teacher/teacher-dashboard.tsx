@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { User, Class, Assignment, Submission } from '@/lib/types';
@@ -51,7 +52,11 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {assignments.length > 0 ? assignments.map(assignment => {
           const assignmentSubmissions = submissions.filter(s => s.assignmentId === assignment.id);
-          const isCompleted = assignmentSubmissions.length >= students.length && students.length > 0;
+          
+          // Calculate students in target classes assigned for this specific assignment
+          const targetStudentsCount = students.filter(s => assignment.classIds.includes(s.classId || '')).length;
+          
+          const isCompleted = assignmentSubmissions.length >= targetStudentsCount && targetStudentsCount > 0;
           return (
             <Card key={assignment.id} className="rounded-3xl shadow-lg shadow-primary/5 flex flex-col">
               <CardHeader>
@@ -69,7 +74,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Users className="w-4 h-4"/>
-                    <span>{assignmentSubmissions.length} / {students.length} học sinh đã nộp</span>
+                    <span>{assignmentSubmissions.length} / {targetStudentsCount} học sinh đã nộp</span>
                 </div>
               </CardContent>
               <CardFooter className="flex justify-between items-center">
