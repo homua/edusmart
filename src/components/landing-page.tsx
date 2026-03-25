@@ -17,7 +17,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
         Nền tảng Giáo dục <br/><span className="text-primary">Thông minh</span>
       </h2>
       <p className="text-muted-foreground text-lg font-medium mb-12 max-w-lg leading-relaxed">
-        Tác giả: Hồ A Mua - Phiên bản: 6.8 pro
+        Thiết kế bởi Hồ Mua
       </p>
       <Button 
         onClick={onNavigate} 
