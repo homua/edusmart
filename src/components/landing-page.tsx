@@ -14,8 +14,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
       <div className="w-24 h-24 mb-10 text-primary">
         <Logo />
       </div>
-      <h2 className="text-4xl md:text-6xl font-black text-foreground mb-6 tracking-tight leading-tight max-w-2xl">
-        Nền tảng Giáo dục <br/><span className="text-primary">Thông minh</span>
+      <h2 className="text-5xl md:text-7xl font-black mb-8 tracking-tighter leading-[1.1] max-w-3xl drop-shadow-2xl text-transparent bg-clip-text bg-gradient-to-b from-foreground via-foreground to-foreground/20 select-none">
+        Nền tảng Giáo dục <br/>
+        <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent drop-shadow-[0_10px_20px_rgba(79,70,229,0.3)]">Thông minh</span>
       </h2>
       <p className="text-muted-foreground text-[10px] font-medium mb-12 max-w-lg leading-relaxed">
         Học sinh: Vàng Thị Lan Anh <br/> Giáo viên hướng dẫn: Hồ A Mua
