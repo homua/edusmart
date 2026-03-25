@@ -2,9 +2,9 @@
   "placeholderImages": [
     {
       "id": "school-logo",
-      "description": "Biểu trưng chính thức Trường PTDTBT THCS Ma Thì Hồ",
-      "imageUrl": "https://picsum.photos/seed/truong-ma-thi-ho-logo/400/400",
-      "imageHint": "school emblem"
+      "description": "Biểu trưng chính thức hình tròn của Trường PTDTBT THCS Ma Thì Hồ",
+      "imageUrl": "https://picsum.photos/seed/truong-ma-thi-ho-logo-v2/400/400",
+      "imageHint": "circular school-emblem"
     }
   ]
 }
