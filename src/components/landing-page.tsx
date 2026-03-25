@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Button } from "./ui/button";
@@ -14,7 +13,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
       <div className="w-20 h-20 mb-12 text-primary">
         <Logo />
       </div>
-      <h2 className="text-6xl md:text-8xl font-black mb-12 tracking-tighter leading-[0.9] max-w-4xl select-none">
+      <h2 className="text-4xl md:text-6xl font-black mb-12 tracking-tighter leading-[0.9] max-w-4xl select-none">
         <span className="block text-foreground uppercase">
           Nền tảng Giáo dục
         </span>
