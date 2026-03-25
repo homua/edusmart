@@ -2,9 +2,9 @@
   "placeholderImages": [
     {
       "id": "school-logo",
-      "description": "Biểu trưng chính thức hình tròn của Trường PTDTBT THCS Ma Thì Hồ với thiết kế trang trọng, màu sắc rực rỡ và biểu tượng giáo dục đặc trưng",
-      "imageUrl": "https://picsum.photos/seed/ma-thi-ho-official-logo-v5/400/400",
-      "imageHint": "circular school logo"
+      "description": "Biểu trưng hiện đại của Trường PTDTBT THCS Ma Thì Hồ với tông màu trắng và xanh, thiết kế hình tròn trang trọng",
+      "imageUrl": "https://picsum.photos/seed/school-logo-unsplash-style/400/400",
+      "imageHint": "school emblem"
     }
   ]
 }
