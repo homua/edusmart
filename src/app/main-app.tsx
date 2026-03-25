@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { useUser, useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, doc, setDoc, writeBatch, deleteDoc, deleteField } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
+import * as XLSX from 'xlsx';
 
 import { UserRole, type View, type Assignment, type Submission, type User, type Class } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -176,16 +177,30 @@ const MainApp: React.FC = () => {
   }
 
   const handleExportData = () => {
-    const fullData = { users, classes, assignments, submissions, exportDate: new Date().toISOString() };
-    const blob = new Blob([JSON.stringify(fullData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `EduSmart_Cloud_Backup_${new Date().getTime()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const wb = XLSX.utils.book_new();
+    
+    // Prepare data for Excel
+    const usersExport = users.map(u => ({ ...u }));
+    const classesExport = classes.map(c => ({ ...c }));
+    const assignmentsExport = assignments.map(a => ({
+      ...a,
+      classIds: JSON.stringify(a.classIds),
+      questions: JSON.stringify(a.questions)
+    }));
+    const submissionsExport = submissions.map(s => ({
+      ...s,
+      answers: JSON.stringify(s.answers)
+    }));
+
+    // Create sheets
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(usersExport), "Users");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(classesExport), "Classes");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(assignmentsExport), "Assignments");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(submissionsExport), "Submissions");
+
+    // Write file
+    XLSX.writeFile(wb, `EduSmart_Backup_${new Date().getTime()}.xlsx`);
+    toast({ title: "Thành công", description: "Đã xuất dữ liệu ra file Excel." });
   };
 
   const handleImportData = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -194,21 +209,65 @@ const MainApp: React.FC = () => {
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
-        const data = JSON.parse(event.target?.result as string);
-        if (window.confirm("CẢNH BÁO: Thao tác này sẽ ghi đè toàn bộ dữ liệu trên Cloud bằng dữ liệu từ file sao lưu. Bạn có chắc chắn muốn tiếp tục không?")) {
+        const dataArray = new Uint8Array(event.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(dataArray, { type: 'array' });
+        
+        if (window.confirm("CẢNH BÁO: Thao tác này sẽ ghi đè dữ liệu Cloud bằng dữ liệu từ file Excel. Bạn có chắc chắn muốn tiếp tục không?")) {
           
-          if (data.users) for (const u of data.users) await saveData(COLLECTIONS.USERS, u.id, u);
-          if (data.classes) for (const c of data.classes) await saveData(COLLECTIONS.CLASSES, c.id, c);
-          if (data.assignments) for (const a of data.assignments) await saveData(COLLECTIONS.ASSIGNMENTS, a.id, a);
-          if (data.submissions) for (const s of data.submissions) await saveData(COLLECTIONS.SUBMISSIONS, s.id, s);
-          toast({ title: "Thành công", description: "Khôi phục dữ liệu từ file hoàn tất!" });
+          // Process Users
+          const usersSheet = workbook.Sheets["Users"];
+          if (usersSheet) {
+            const usersJson: any[] = XLSX.utils.sheet_to_json(usersSheet);
+            for (const u of usersJson) {
+              await saveData(COLLECTIONS.USERS, u.id, u);
+            }
+          }
           
+          // Process Classes
+          const classesSheet = workbook.Sheets["Classes"];
+          if (classesSheet) {
+            const classesJson: any[] = XLSX.utils.sheet_to_json(classesSheet);
+            for (const c of classesJson) {
+              await saveData(COLLECTIONS.CLASSES, c.id, c);
+            }
+          }
+
+          // Process Assignments
+          const assignmentsSheet = workbook.Sheets["Assignments"];
+          if (assignmentsSheet) {
+            const assignmentsJson: any[] = XLSX.utils.sheet_to_json(assignmentsSheet);
+            for (const a of assignmentsJson) {
+              const formatted = {
+                ...a,
+                classIds: typeof a.classIds === 'string' ? JSON.parse(a.classIds) : a.classIds,
+                questions: typeof a.questions === 'string' ? JSON.parse(a.questions) : a.questions,
+              };
+              await saveData(COLLECTIONS.ASSIGNMENTS, formatted.id, formatted);
+            }
+          }
+
+          // Process Submissions
+          const submissionsSheet = workbook.Sheets["Submissions"];
+          if (submissionsSheet) {
+            const submissionsJson: any[] = XLSX.utils.sheet_to_json(submissionsSheet);
+            for (const s of submissionsJson) {
+                const formatted = {
+                    ...s,
+                    answers: typeof s.answers === 'string' ? JSON.parse(s.answers) : s.answers
+                };
+                await saveData(COLLECTIONS.SUBMISSIONS, formatted.id, formatted);
+            }
+          }
+          
+          toast({ title: "Thành công", description: "Khôi phục dữ liệu từ file Excel hoàn tất!" });
+          e.target.value = ''; // Reset input
         }
       } catch (err) { 
-        alert("Lỗi đọc file. File không hợp lệ hoặc bị hỏng.");
+        console.error("Excel Import Error:", err);
+        alert("Lỗi đọc file Excel. File không hợp lệ hoặc sai định dạng.");
       }
     };
-    reader.readAsText(file);
+    reader.readAsArrayBuffer(file);
   };
 
   const handleDeleteUser = async (userToDelete: User) => {

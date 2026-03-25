@@ -217,7 +217,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <p className="text-muted-foreground">Quản lý người dùng, lớp học và dữ liệu hệ thống.</p>
         </div>
         <div className="flex items-center gap-2">
-           <Button onClick={onExport} variant="outline">
+           <Button onClick={onExport} variant="outline" title="Xuất toàn bộ dữ liệu ra file Excel (.xlsx)">
               <Download className="mr-2" />
               Xuất dữ liệu
            </Button>
@@ -226,7 +226,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <Upload className="mr-2" />
                 Nhập dữ liệu
             </div>
-             <Input id="import-file" type="file" accept=".json" className="hidden" onChange={onImport} />
+             <Input id="import-file" type="file" accept=".xlsx, .xls" className="hidden" onChange={onImport} />
            </Label>
         </div>
       </div>
