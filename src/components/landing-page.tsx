@@ -11,7 +11,10 @@ interface LandingPageProps {
 const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
   return (
     <div className="flex flex-col items-center justify-center py-20 md:py-32 text-center animate-in fade-in slide-in-from-bottom-8 duration-1000">
-      <Logo className="w-48 h-48 mb-12 shadow-2xl shadow-primary/20" />
+      <div className="relative mb-12">
+        <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full scale-150 animate-pulse"></div>
+        <Logo className="w-48 h-48 relative z-10" />
+      </div>
       <h2 className="text-3xl md:text-5xl font-black mb-12 tracking-tighter leading-[0.9] max-w-4xl select-none">
         <span className="block text-foreground uppercase">
           Hệ thống Giáo dục
