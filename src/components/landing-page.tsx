@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "./ui/button";
@@ -16,7 +17,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
       <h2 className="text-4xl md:text-6xl font-black text-foreground mb-6 tracking-tight leading-tight max-w-2xl">
         Nền tảng Giáo dục <br/><span className="text-primary">Thông minh</span>
       </h2>
-      <p className="text-muted-foreground text-lg font-medium mb-12 max-w-lg leading-relaxed">
+      <p className="text-muted-foreground text-xs font-medium mb-12 max-w-lg leading-relaxed">
         Học sinh: Vàng Thị Lan Anh <br/> Giáo viên hướng dẫn: Hồ A Mua
       </p>
       <Button 
