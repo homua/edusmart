@@ -179,27 +179,29 @@ const MainApp: React.FC = () => {
       try {
         const dataArray = new Uint8Array(event.target?.result as ArrayBuffer);
         const workbook = XLSX.read(dataArray, { type: 'array' });
-        if (window.confirm("CẢNH BÁO: Thao tác này sẽ ghi đè dữ liệu Cloud. Bạn có chắc chắn?")) {
-          const sheets = ["Users", "Classes", "Assignments", "Submissions"];
-          for (const sheetName of sheets) {
-            const sheet = workbook.Sheets[sheetName];
-            if (!sheet) continue;
-            const json: any[] = XLSX.utils.sheet_to_json(sheet);
-            const collectionName = sheetName.toLowerCase();
-            for (const item of json) {
-              let formatted = { ...item };
-              if (collectionName === 'classes') {
-                formatted.teacherIds = typeof item.teacherIds === 'string' ? JSON.parse(item.teacherIds) : item.teacherIds;
-              } else if (collectionName === 'assignments') {
-                formatted.classIds = typeof item.classIds === 'string' ? JSON.parse(item.classIds) : item.classIds;
-                formatted.questions = typeof item.questions === 'string' ? JSON.parse(item.questions) : item.questions;
-              } else if (collectionName === 'submissions') {
-                formatted.answers = typeof item.answers === 'string' ? JSON.parse(item.answers) : item.answers;
+        if (workbook.SheetNames.length > 0) {
+          if (window.confirm("CẢNH BÁO: Thao tác này sẽ ghi đè dữ liệu Cloud. Bạn có chắc chắn?")) {
+            const sheets = ["Users", "Classes", "Assignments", "Submissions"];
+            for (const sheetName of sheets) {
+              const sheet = workbook.Sheets[sheetName];
+              if (!sheet) continue;
+              const json: any[] = XLSX.utils.sheet_to_json(sheet);
+              const collectionName = sheetName.toLowerCase();
+              for (const item of json) {
+                let formatted = { ...item };
+                if (collectionName === 'classes') {
+                  formatted.teacherIds = typeof item.teacherIds === 'string' ? JSON.parse(item.teacherIds) : item.teacherIds;
+                } else if (collectionName === 'assignments') {
+                  formatted.classIds = typeof item.classIds === 'string' ? JSON.parse(item.classIds) : item.classIds;
+                  formatted.questions = typeof item.questions === 'string' ? JSON.parse(item.questions) : item.questions;
+                } else if (collectionName === 'submissions') {
+                  formatted.answers = typeof item.answers === 'string' ? JSON.parse(item.answers) : item.answers;
+                }
+                await saveData(collectionName, item.id, formatted);
               }
-              await saveData(collectionName, item.id, formatted);
             }
+            toast({ title: "Thành công", description: "Khôi phục dữ liệu hoàn tất!" });
           }
-          toast({ title: "Thành công", description: "Khôi phục dữ liệu hoàn tất!" });
         }
       } catch (err) { 
         toast({ variant: 'destructive', title: 'Lỗi', description: 'File không hợp lệ.' });
@@ -289,6 +291,7 @@ const MainApp: React.FC = () => {
                 users={users}
                 classes={classes}
                 onAddUser={async (u) => await saveData(COLLECTIONS.USERS, u.id, u)}
+                onUpdateUser={async (u) => await saveData(COLLECTIONS.USERS, u.id, u)}
                 onDeleteUser={handleDeleteUser}
                 onDeleteUsers={handleDeleteUsers}
                 onAddClass={async (c) => await saveData(COLLECTIONS.CLASSES, c.id, c)}

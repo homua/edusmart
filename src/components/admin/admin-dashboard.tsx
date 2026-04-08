@@ -10,10 +10,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Plus, Trash2, Upload, Download, UserPlus, Pencil, FileDown, ChevronDown } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -23,6 +22,7 @@ interface AdminDashboardProps {
   users: User[];
   classes: Class[];
   onAddUser: (user: User) => Promise<void>;
+  onUpdateUser: (user: User) => Promise<void>;
   onDeleteUser: (user: User) => Promise<void>;
   onDeleteUsers: (ids: string[]) => Promise<void>;
   onAddClass: (cls: Class) => Promise<void>;
@@ -36,6 +36,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   users,
   classes,
   onAddUser,
+  onUpdateUser,
   onDeleteUser,
   onDeleteUsers,
   onAddClass,
@@ -46,6 +47,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
   const { toast } = useToast();
   const [isUserModalOpen, setUserModalOpen] = useState(false);
+  const [isEditUserModalOpen, setEditUserModalOpen] = useState(false);
   const [isClassModalOpen, setClassModalOpen] = useState(false);
   const [isClassEditModalOpen, setClassEditModalOpen] = useState(false);
 
@@ -54,6 +56,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>('STUDENT' as UserRole);
+
+  // Edit User state
+  const [userToEdit, setUserToEdit] = useState<User | null>(null);
+  const [editFullName, setEditFullName] = useState('');
+  const [editUsername, setEditUsername] = useState('');
+  const [editPassword, setEditPassword] = useState('');
+  const [editRole, setEditRole] = useState<UserRole>('STUDENT' as UserRole);
 
   // Class form state
   const [className, setClassName] = useState('');
@@ -89,6 +98,34 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setUsername('');
     setPassword('');
     setUserModalOpen(false);
+  };
+
+  const handleOpenEditUserModal = (user: User) => {
+    setUserToEdit(user);
+    setEditFullName(user.fullName);
+    setEditUsername(user.username);
+    setEditPassword(user.password || '');
+    setEditRole(user.role);
+    setEditUserModalOpen(true);
+  };
+
+  const handleUpdateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userToEdit || !editFullName || !editUsername) {
+      toast({ variant: 'destructive', description: 'Vui lòng điền đầy đủ thông tin.' });
+      return;
+    }
+    const updatedUser: User = {
+      ...userToEdit,
+      fullName: editFullName,
+      username: editUsername,
+      password: editPassword,
+      role: editRole,
+    };
+    await onUpdateUser(updatedUser);
+    toast({ description: 'Đã cập nhật thông tin người dùng.' });
+    setEditUserModalOpen(false);
+    setUserToEdit(null);
   };
 
   const handleAddClass = async (e: React.FormEvent) => {
@@ -343,23 +380,28 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                     )}
                                 </TableCell>
                                 <TableCell className="text-right">
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full">
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>Xóa người dùng "{user.fullName}"?</AlertDialogTitle>
-                                                <AlertDialogDescription>Thao tác này không thể hoàn tác.</AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>Hủy</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => onDeleteUser(user)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Xóa</AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
+                                    <div className="flex items-center justify-end gap-2">
+                                        <Button variant="ghost" size="icon" onClick={() => handleOpenEditUserModal(user)} className="text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full">
+                                            <Pencil className="h-4 w-4" />
+                                        </Button>
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full">
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Xóa người dùng "{user.fullName}"?</AlertDialogTitle>
+                                                    <AlertDialogDescription>Thao tác này không thể hoàn tác.</AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Hủy</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => onDeleteUser(user)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Xóa</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </div>
                                 </TableCell>
                             </TableRow>
                         ))}
@@ -409,15 +451,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               {user.password && <div className="text-xs text-muted-foreground font-mono">Mật khẩu: <b>{user.password}</b></div>}
                             </TableCell>
                             <TableCell className="text-right">
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full"><Trash2 className="h-4 w-4"/></Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader><AlertDialogTitle>Xóa "{user.fullName}"?</AlertDialogTitle></AlertDialogHeader>
-                                        <AlertDialogFooter><AlertDialogCancel>Hủy</AlertDialogCancel><AlertDialogAction onClick={() => onDeleteUser(user)} className="bg-destructive">Xóa</AlertDialogAction></AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
+                                <div className="flex items-center justify-end gap-2">
+                                    <Button variant="ghost" size="icon" onClick={() => handleOpenEditUserModal(user)} className="text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full">
+                                        <Pencil className="h-4 w-4" />
+                                    </Button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full"><Trash2 className="h-4 w-4"/></Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader><AlertDialogTitle>Xóa "{user.fullName}"?</AlertDialogTitle></AlertDialogHeader>
+                                            <AlertDialogFooter><AlertDialogCancel>Hủy</AlertDialogCancel><AlertDialogAction onClick={() => onDeleteUser(user)} className="bg-destructive">Xóa</AlertDialogAction></AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </div>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -434,15 +481,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           <div className="text-xs text-muted-foreground">@{user.username}</div>
                         </TableCell>
                         <TableCell className="text-right">
-                          <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full"><Trash2 className="h-4 w-4"/></Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                  <AlertDialogHeader><AlertDialogTitle>Xóa "{user.fullName}"?</AlertDialogTitle></AlertDialogHeader>
-                                  <AlertDialogFooter><AlertDialogCancel>Hủy</AlertDialogCancel><AlertDialogAction onClick={() => onDeleteUser(user)} className="bg-destructive">Xóa</AlertDialogAction></AlertDialogFooter>
-                              </AlertDialogContent>
-                          </AlertDialog>
+                          <div className="flex items-center justify-end gap-2">
+                            <Button variant="ghost" size="icon" onClick={() => handleOpenEditUserModal(user)} className="text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-full">
+                                <Pencil className="h-4 w-4" />
+                            </Button>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full"><Trash2 className="h-4 w-4"/></Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader><AlertDialogTitle>Xóa "{user.fullName}"?</AlertDialogTitle></AlertDialogHeader>
+                                    <AlertDialogFooter><AlertDialogCancel>Hủy</AlertDialogCancel><AlertDialogAction onClick={() => onDeleteUser(user)} className="bg-destructive">Xóa</AlertDialogAction></AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -577,6 +629,41 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={isEditUserModalOpen} onOpenChange={setEditUserModalOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Chỉnh sửa người dùng</DialogTitle></DialogHeader>
+          <form onSubmit={handleUpdateUser} className="space-y-4">
+            <div className="space-y-2">
+                <Label>Họ và tên</Label>
+                <Input placeholder="Họ và tên" value={editFullName} onChange={e => setEditFullName(e.target.value)} required />
+            </div>
+            <div className="space-y-2">
+                <Label>Tên đăng nhập</Label>
+                <Input placeholder="Tên đăng nhập" value={editUsername} onChange={e => setEditUsername(e.target.value)} required />
+            </div>
+            <div className="space-y-2">
+                <Label>Mật khẩu</Label>
+                <Input type="text" placeholder="Mật khẩu" value={editPassword} onChange={e => setEditPassword(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+                <Label>Vai trò</Label>
+                <Select onValueChange={(v) => setEditRole(v as UserRole)} value={editRole}>
+                    <SelectTrigger><SelectValue placeholder="Chọn vai trò" /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="ADMIN">Quản trị viên</SelectItem>
+                        <SelectItem value="TEACHER">Giáo viên</SelectItem>
+                        <SelectItem value="STUDENT">Học sinh</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            <DialogFooter>
+                <Button type="button" variant="ghost" onClick={() => setEditUserModalOpen(false)}>Hủy</Button>
+                <Button type="submit">Lưu thay đổi</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
