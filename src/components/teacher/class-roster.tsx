@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -45,11 +46,11 @@ const ClassRoster: React.FC<ClassRosterProps> = ({
   onParseStudents,
 }) => {
   const { toast } = useToast();
-  // Find class by teacher assignment
-  const currentClass = classes.find(c => c.teacherId === currentUser.id);
+  // Find managed classes where current user is one of the teachers
+  const managedClasses = classes.filter(c => c.teacherIds?.includes(currentUser.id));
+  const classNamesText = managedClasses.map(c => c.name).join(', ');
+
   const [newStudentName, setNewStudentName] = useState('');
-  
-  // Bulk import state
   const [isBulkModalOpen, setBulkModalOpen] = useState(false);
   const [bulkInput, setBulkInput] = useState('');
   const [parsedNames, setParsedNames] = useState<string[]>([]);
@@ -58,7 +59,7 @@ const ClassRoster: React.FC<ClassRosterProps> = ({
 
   const handleAddSingleStudent = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newStudentName.trim() || !currentClass) return;
+    if (!newStudentName.trim() || managedClasses.length === 0) return;
     await onAddStudents([newStudentName]);
     toast({ description: `Đã thêm học sinh ${newStudentName}.` });
     setNewStudentName('');
@@ -79,7 +80,7 @@ const ClassRoster: React.FC<ClassRosterProps> = ({
   };
 
   const confirmBulkImport = async () => {
-    if (!currentClass) return;
+    if (managedClasses.length === 0) return;
     await onAddStudents(parsedNames);
     toast({ description: `Đã thêm ${parsedNames.length} học sinh vào lớp.` });
     setBulkInput('');
@@ -109,14 +110,14 @@ const ClassRoster: React.FC<ClassRosterProps> = ({
     }
     const studentsToExport = students.map(s => ({
       'Họ và tên': s.fullName,
-      'Lớp': currentClass?.name || '',
+      'Lớp': managedClasses.find(c => c.id === s.classId)?.name || 'Khác',
       'Tên đăng nhập': s.username,
       'Mật khẩu': s.password,
     }));
     const ws = XLSX.utils.json_to_sheet(studentsToExport);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Danh sach Hoc sinh");
-    XLSX.writeFile(wb, `Danh_sach_Hoc_sinh_Lop_${currentClass?.name || 'Unknown'}_${new Date().getTime()}.xlsx`);
+    XLSX.writeFile(wb, `Danh_sach_Hoc_sinh_Lop_${classNamesText.replace(', ', '_')}_${new Date().getTime()}.xlsx`);
     toast({ title: "Thành công", description: "Đã xuất danh sách tài khoản học sinh." });
   };
 
@@ -127,16 +128,16 @@ const ClassRoster: React.FC<ClassRosterProps> = ({
           <ArrowLeft className="mr-2 h-4 w-4" /> Quay lại
         </Button>
         <div className="text-right flex-grow">
-          <h1 className="text-3xl font-black text-foreground">Quản lý lớp: {currentClass?.name || 'Chưa gán'}</h1>
+          <h1 className="text-3xl font-black text-foreground">Quản lý lớp: {classNamesText || 'Chưa gán'}</h1>
           <p className="text-muted-foreground">{students.length} học sinh</p>
         </div>
       </div>
       
-      {currentClass && (
+      {managedClasses.length > 0 && (
         <Card className="rounded-3xl shadow-lg shadow-primary/5">
           <CardHeader>
             <CardTitle>Thêm học sinh</CardTitle>
-            <CardDescription>Thêm thủ công từng em hoặc nhập hàng loạt bằng AI.</CardDescription>
+            <CardDescription>Thêm thủ công hoặc nhập hàng loạt bằng AI vào lớp quản lý.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col md:flex-row gap-4">
             <form onSubmit={handleAddSingleStudent} className="flex-1 flex gap-4">
@@ -158,14 +159,14 @@ const ClassRoster: React.FC<ClassRosterProps> = ({
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
                   <DialogTitle className="text-2xl font-bold">Nhập danh sách bằng AI</DialogTitle>
-                  <DialogDescription>Dán danh sách học sinh từ Excel, Word hoặc văn bản. AI sẽ tự động bóc tách tên.</DialogDescription>
+                  <DialogDescription>Dán danh sách học sinh, AI sẽ tự động bóc tách tên.</DialogDescription>
                 </DialogHeader>
                 <div className="py-4">
                   {parsedNames.length === 0 ? (
                     <Textarea
                       value={bulkInput}
                       onChange={e => setBulkInput(e.target.value)}
-                      placeholder="Nguyễn Văn A - Lớp 10A1&#10;Trần Thị B&#10;Lê Văn C, Nam, 15 tuổi"
+                      placeholder="Dán danh sách tại đây..."
                       className="w-full h-64 rounded-xl resize-none"
                       disabled={isParsing}
                     />
@@ -188,7 +189,7 @@ const ClassRoster: React.FC<ClassRosterProps> = ({
                   ) : (
                     <>
                       <Button variant="ghost" onClick={resetBulkModal}>Thử lại</Button>
-                      <Button onClick={confirmBulkImport} className="bg-accent text-accent-foreground hover:bg-accent/90">Xác nhận thêm vào lớp</Button>
+                      <Button onClick={confirmBulkImport} className="bg-accent text-accent-foreground hover:bg-accent/90">Xác nhận thêm</Button>
                     </>
                   )}
                 </DialogFooter>
@@ -203,24 +204,17 @@ const ClassRoster: React.FC<ClassRosterProps> = ({
           <CardTitle>Danh sách lớp</CardTitle>
             <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" onClick={handleExportStudentsExcel} className="rounded-xl">
-                  <FileDown className="mr-2 h-4 w-4" />
-                  Xuất danh sách HS
+                  <FileDown className="mr-2 h-4 w-4" /> Xuất danh sách HS
                 </Button>
                 {selectedStudents.length > 0 && (
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button variant="destructive" size="sm" className="rounded-xl">
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Xóa đã chọn ({selectedStudents.length})
+                                <Trash2 className="mr-2 h-4 w-4" /> Xóa ({selectedStudents.length})
                             </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Bạn chắc chắn muốn xóa {selectedStudents.length} học sinh đã chọn?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Thao tác này không thể hoàn tác.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
+                            <AlertDialogHeader><AlertDialogTitle>Xóa học sinh đã chọn?</AlertDialogTitle></AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Hủy</AlertDialogCancel>
                                 <AlertDialogAction onClick={handleConfirmBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Xóa</AlertDialogAction>
@@ -236,43 +230,31 @@ const ClassRoster: React.FC<ClassRosterProps> = ({
               <Checkbox
                 id="select-all"
                 checked={selectedStudents.length > 0 && selectedStudents.length === students.length}
-                onCheckedChange={(checked) =>
-                  setSelectedStudents(checked ? students.map((s) => s.id) : [])
-                }
+                onCheckedChange={(checked) => setSelectedStudents(checked ? students.map((s) => s.id) : [])}
               />
-              <label
-                htmlFor="select-all"
-                className="ml-3 text-sm font-medium"
-              >
-                Chọn tất cả ({students.length} học sinh)
-              </label>
+              <label htmlFor="select-all" className="ml-3 text-sm font-medium">Chọn tất cả ({students.length} học sinh)</label>
             </div>
           )}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
             {students.map(s => (
-              <div key={s.id} className="p-4 bg-background rounded-2xl flex justify-between items-center group transition-all border-2 border-transparent hover:border-primary/20 hover:shadow-md has-[:checked]:border-primary/50 has-[:checked]:bg-primary/5">
+              <div key={s.id} className="p-4 bg-background rounded-2xl flex justify-between items-center group transition-all border-2 border-transparent hover:border-primary/20 hover:shadow-md">
                 <div className="flex items-center gap-3">
                   <Checkbox
                     id={`student-${s.id}`}
                     checked={selectedStudents.includes(s.id)}
-                    onCheckedChange={(checked) => {
-                      setSelectedStudents(prev => checked ? [...prev, s.id] : prev.filter(id => id !== s.id));
-                    }}
+                    onCheckedChange={(checked) => setSelectedStudents(prev => checked ? [...prev, s.id] : prev.filter(id => id !== s.id))}
                   />
                   <label htmlFor={`student-${s.id}`} className="flex items-center gap-4 cursor-pointer">
                     <Avatar><AvatarFallback><UserIcon /></AvatarFallback></Avatar>
                     <div>
                       <h4 className="font-bold text-foreground">{s.fullName}</h4>
                       <span className="text-xs text-muted-foreground font-mono">@{s.username}</span>
-                      <div className="text-xs text-muted-foreground font-mono mt-1">Mật khẩu: <span className="font-bold text-foreground">{s.password}</span></div>
+                      <div className="text-xs text-muted-foreground font-mono">Mật khẩu: <b>{s.password}</b></div>
                     </div>
                   </label>
                 </div>
               </div>
             ))}
-            {students.length === 0 && (
-              <p className="col-span-full text-center text-muted-foreground py-8">Chưa có học sinh nào trong lớp.</p>
-            )}
           </div>
         </CardContent>
       </Card>

@@ -63,7 +63,6 @@ const MainApp: React.FC = () => {
 
   useEffect(() => {
     setIsClient(true);
-    // Safety timeout to prevent infinite loading screen
     const timer = setTimeout(() => setIsInitialLoad(false), 3000);
     return () => clearTimeout(timer);
   }, []);
@@ -151,7 +150,10 @@ const MainApp: React.FC = () => {
   const handleExportData = () => {
     const wb = XLSX.utils.book_new();
     const usersExport = users.map(u => ({ ...u }));
-    const classesExport = classes.map(c => ({ ...c }));
+    const classesExport = classes.map(c => ({ 
+      ...c, 
+      teacherIds: JSON.stringify(c.teacherIds || []) 
+    }));
     const assignmentsExport = assignments.map(a => ({
       ...a,
       classIds: JSON.stringify(a.classIds),
@@ -186,7 +188,9 @@ const MainApp: React.FC = () => {
             const collectionName = sheetName.toLowerCase();
             for (const item of json) {
               let formatted = { ...item };
-              if (collectionName === 'assignments') {
+              if (collectionName === 'classes') {
+                formatted.teacherIds = typeof item.teacherIds === 'string' ? JSON.parse(item.teacherIds) : item.teacherIds;
+              } else if (collectionName === 'assignments') {
                 formatted.classIds = typeof item.classIds === 'string' ? JSON.parse(item.classIds) : item.classIds;
                 formatted.questions = typeof item.questions === 'string' ? JSON.parse(item.questions) : item.questions;
               } else if (collectionName === 'submissions') {
@@ -210,8 +214,9 @@ const MainApp: React.FC = () => {
       try {
         const batch = writeBatch(firestore);
         if (userToDelete.role === UserRole.TEACHER) {
-          classes.filter(c => c.teacherId === userToDelete.id).forEach(c => {
-            batch.update(doc(firestore, COLLECTIONS.CLASSES, c.id), { teacherId: deleteField() });
+          classes.filter(c => c.teacherIds?.includes(userToDelete.id)).forEach(c => {
+            const updatedIds = (c.teacherIds || []).filter(id => id !== userToDelete.id);
+            batch.update(doc(firestore, COLLECTIONS.CLASSES, c.id), { teacherIds: updatedIds });
           });
         }
         batch.delete(doc(firestore, COLLECTIONS.USERS, userToDelete.id));
@@ -264,14 +269,10 @@ const MainApp: React.FC = () => {
     }
   };
 
-
   const renderContent = () => {
-    if (view === 'HOME' && !currentUser) {
-      return <LandingPage onNavigate={() => navigate('AUTH')} />;
-    }
-    if (view === 'AUTH') {
-      return <AuthForm existingUsers={users} onLogin={handleLogin} />;
-    }
+    if (view === 'HOME' && !currentUser) return <LandingPage onNavigate={() => navigate('AUTH')} />;
+    if (view === 'AUTH') return <AuthForm existingUsers={users} onLogin={handleLogin} />;
+    
     if (currentUser) {
       switch (currentUser.role) {
         case UserRole.ADMIN:
@@ -284,11 +285,7 @@ const MainApp: React.FC = () => {
                 onDeleteUser={handleDeleteUser}
                 onDeleteUsers={handleDeleteUsers}
                 onAddClass={async (c) => await saveData(COLLECTIONS.CLASSES, c.id, c)}
-                onUpdateClass={async (c) => {
-                   await saveData(COLLECTIONS.CLASSES, c.id, c);
-                   // If a teacher is assigned, we could update their classId too, 
-                   // but logic now uses c.teacherId as the primary link.
-                }}
+                onUpdateClass={async (c) => await saveData(COLLECTIONS.CLASSES, c.id, c)}
                 onDeleteClasses={handleDeleteClasses}
                 onExport={handleExportData}
                 onImport={handleImportData}
@@ -297,7 +294,7 @@ const MainApp: React.FC = () => {
           }
           break;
         case UserRole.TEACHER:
-          const teacherClass = classes.find(c => c.teacherId === currentUser.id);
+          const managedClasses = classes.filter(c => c.teacherIds?.includes(currentUser.id));
           switch (view) {
             case 'TEACHER_DASHBOARD':
               return (
@@ -342,11 +339,12 @@ const MainApp: React.FC = () => {
                 <ClassRoster
                   currentUser={currentUser}
                   classes={classes}
-                  students={users.filter(u => u.role === UserRole.STUDENT && u.classId === teacherClass?.id)}
+                  students={users.filter(u => u.role === UserRole.STUDENT && managedClasses.some(c => c.id === u.classId))}
                   onBack={() => navigate('TEACHER_DASHBOARD')}
                   onDeleteStudents={handleDeleteUsers}
                   onAddStudents={async (names) => {
-                    if (!teacherClass) return;
+                    if (managedClasses.length === 0) return;
+                    const primaryClass = managedClasses[0];
                     for (const name of names) {
                       const studentId = Math.random().toString(36).substring(2, 11);
                       const newStudent: User = {
@@ -355,7 +353,7 @@ const MainApp: React.FC = () => {
                         username: slugify(name) + Math.floor(100 + Math.random() * 900),
                         password: Math.random().toString(36).slice(-6).toUpperCase(),
                         role: UserRole.STUDENT,
-                        classId: teacherClass.id
+                        classId: primaryClass.id
                       };
                       await saveData(COLLECTIONS.USERS, studentId, newStudent);
                     }
@@ -396,9 +394,7 @@ const MainApp: React.FC = () => {
     return <LandingPage onNavigate={() => navigate('AUTH')} />;
   };
 
-  if (!isClient || (isInitialLoad && isLoading)) {
-    return <LoadingScreen />;
-  }
+  if (!isClient || (isInitialLoad && isLoading)) return <LoadingScreen />;
 
   return (
     <div className="min-h-screen bg-background">

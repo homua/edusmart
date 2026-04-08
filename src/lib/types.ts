@@ -1,3 +1,4 @@
+
 export enum UserRole {
   ADMIN = 'ADMIN',
   TEACHER = 'TEACHER',
@@ -7,7 +8,7 @@ export enum UserRole {
 export interface User {
   id: string;
   username: string;
-  password?: string; // Password should not be stored long-term or passed to client after auth
+  password?: string;
   fullName: string;
   role: UserRole;
   classId?: string;
@@ -16,7 +17,7 @@ export interface User {
 export interface Class {
   id: string;
   name: string;
-  teacherId?: string;
+  teacherIds?: string[];
 }
 
 export enum QuestionType {

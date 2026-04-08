@@ -34,18 +34,19 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   onDelete,
   onViewRoster,
 }) => {
-  // Find class by teacher assignment instead of teacher's own classId
-  const currentClass = classes.find(c => c.teacherId === currentUser.id);
+  // Find managed classes where current user is one of the teachers
+  const managedClasses = classes.filter(c => c.teacherIds?.includes(currentUser.id));
+  const classNamesText = managedClasses.map(c => c.name).join(', ');
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black text-foreground">Bảng điều khiển Giáo viên</h1>
-          <p className="text-muted-foreground">Lớp chủ nhiệm: <span className="font-bold text-primary">{currentClass?.name || 'Chưa có'}</span></p>
+          <p className="text-muted-foreground">Lớp chủ nhiệm: <span className="font-bold text-primary">{classNamesText || 'Chưa gán'}</span></p>
         </div>
         <div className="flex items-center gap-2">
-          {currentClass && (
+          {managedClasses.length > 0 && (
             <Button onClick={onViewRoster} variant="outline"><Users className="mr-2" /> Quản lý lớp</Button>
           )}
           <Button onClick={onCreateNew}><Plus className="mr-2" /> Tạo bài tập mới</Button>
@@ -55,11 +56,9 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {assignments.length > 0 ? assignments.map(assignment => {
           const assignmentSubmissions = submissions.filter(s => s.assignmentId === assignment.id);
-          
-          // Calculate students in target classes assigned for this specific assignment
           const targetStudentsCount = students.filter(s => assignment.classIds.includes(s.classId || '')).length;
-          
           const isCompleted = assignmentSubmissions.length >= targetStudentsCount && targetStudentsCount > 0;
+          
           return (
             <Card key={assignment.id} className="rounded-3xl shadow-lg shadow-primary/5 flex flex-col">
               <CardHeader>
@@ -67,7 +66,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                 <CardDescription>
                   <span className="font-semibold text-primary">{assignment.subject}</span>
                   <span className="mx-2 text-muted-foreground/50">|</span>
-                  <span>Tạo ngày: {format(parseISO(assignment.createdAt), "d 'tháng' M, yyyy", { locale: vi })}</span>
+                  <span>{format(parseISO(assignment.createdAt), "d 'tháng' M, yyyy", { locale: vi })}</span>
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-grow space-y-2">
@@ -77,7 +76,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Users className="w-4 h-4"/>
-                    <span>{assignmentSubmissions.length} / {targetStudentsCount} học sinh đã nộp</span>
+                    <span>{assignmentSubmissions.length} / {targetStudentsCount} đã nộp</span>
                 </div>
               </CardContent>
               <CardFooter className="flex justify-between items-center">
@@ -87,7 +86,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                 <div className="flex items-center gap-1">
                   <Button variant="ghost" size="icon" className="rounded-full" onClick={() => onEdit(assignment)}><Pencil className="w-4 h-4" /></Button>
                   <Button variant="ghost" size="icon" className="rounded-full" onClick={() => onViewReport(assignment)}><PieChart className="w-4 h-4" /></Button>
-                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10 rounded-full" onClick={() => onDelete(assignment.id)}><Trash2 className="w-4 h-4" /></Button>
+                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive rounded-full" onClick={() => onDelete(assignment.id)}><Trash2 className="w-4 h-4" /></Button>
                 </div>
               </CardFooter>
             </Card>

@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -52,6 +53,13 @@
         "name": {
           "type": "string",
           "description": "The name of the class."
+        },
+        "teacherIds": {
+          "type": "array",
+          "description": "List of IDs of teachers who manage this class.",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "required": [
@@ -163,7 +171,7 @@
           "schema": {
             "$ref": "#/backend/entities/User"
           },
-          "description": "Stores user data.  The 'id' field is used as the document ID. User roles (Admin, Teacher, Student) are stored directly in each user document, enabling role-based access control.",
+          "description": "Stores user data.",
           "params": [
             {
               "name": "userId",
@@ -179,7 +187,7 @@
           "schema": {
             "$ref": "#/backend/entities/Class"
           },
-          "description": "Stores class data. The 'id' field is used as the document ID.",
+          "description": "Stores class data. Supporting multiple teachers per class via teacherIds array.",
           "params": [
             {
               "name": "classId",
@@ -195,7 +203,7 @@
           "schema": {
             "$ref": "#/backend/entities/Assignment"
           },
-          "description": "Stores assignment data. The 'id' field is used as the document ID. Includes 'teacherId' to denote the owner. The `classIds` array represents the classes to which the assignment is assigned.",
+          "description": "Stores assignment data.",
           "params": [
             {
               "name": "assignmentId",
@@ -211,7 +219,7 @@
           "schema": {
             "$ref": "#/backend/entities/Submission"
           },
-          "description": "Stores submission data. The 'id' field is used as the document ID. Includes 'studentId' and 'assignmentId' to link submissions to students and assignments.",
+          "description": "Stores submission data.",
           "params": [
             {
               "name": "submissionId",
@@ -220,7 +228,6 @@
           ]
         }
       }
-    ],
-    "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability, following the defined core design principles. It leverages denormalization for authorization, structural segregation for security, and standardized access modeling.  Each collection is designed to have a homogeneous security posture.  The structure aims to support secure 'list' operations (QAPs) and maintain data integrity.\n\n*   **Users:** Stores user information. Class ID is stored within the user document, relating users to classes. Roles are also stored in the user document enabling simple DBAC.\n*   **Classes:** Stores class information. \n*   **Assignments:** Stores assignment data. Includes `teacherId` to define the teacher who created it, and `classIds` as an array to represent the many-to-many relationship between classes and assignments. This allows teachers to create an assignment once, and assign it to many classes.\n*   **Submissions:** Stores student submissions. Includes `studentId` and `assignmentId` to link submissions to students and assignments.\n\nAuthorization Independence:\n\n*   The data model implements authorization independence by storing the necessary authorization data (user roles, class assignments) directly within the documents where it's needed. This avoids the need for `get()` calls in security rules to retrieve parent document data. For example, the `User` entity stores role and class information, allowing for direct authorization checks without needing to fetch related class documents.\n\nSupporting QAPs (Rules are not Filters):\n\n*   Structural segregation is used to support secure `list` operations. For instance, user drafts are stored in a private collection under the user's ID, while public data could reside in a separate, publicly accessible collection (if there were public data). In this case all data is private, so segregation is achieved by the path based ownership of User, Class, and the explicit `teacherId` and `classIds` fields on Assignment, as well as `studentId` and `assignmentId` on Submission.\n"
+    ]
   }
 }
