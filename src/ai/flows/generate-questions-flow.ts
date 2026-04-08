@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -52,7 +53,7 @@ Loại câu hỏi phải là: {{questionType}}.
 - Nếu loại là 'MULTIPLE_CHOICE', hãy cung cấp 4 lựa chọn và chỉ định đáp án đúng. Các lựa chọn phải khác biệt và hợp lý.
 - Nếu loại là 'TEXT', câu hỏi nên là dạng câu hỏi mở hoặc tự luận, và cung cấp một câu trả lời mẫu hoặc các điểm chính cần có trong câu trả lời đúng.
 - Mỗi câu hỏi phải có ID duy nhất theo định dạng 'q_' + một chuỗi ngẫu nhiên.
-- Mỗi câu hỏi mặc định có giá trị 10 điểm.
+- Mỗi câu hỏi mặc định có giá trị nằm trong các mức điểm: 0.25, 0.5, 1, 2, 3, 4, 5. Hãy chọn mức điểm phù hợp với độ khó của câu hỏi.
 
 Chỉ trả về một mảng JSON chứa các đối tượng câu hỏi, không có bất kỳ văn bản giải thích nào khác.`,
 });

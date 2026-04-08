@@ -53,7 +53,7 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
       type: QuestionType.TEXT,
       options: [],
       correctAnswer: '',
-      points: 10,
+      points: 1,
     };
     setQuestions([...questions, newQuestion]);
   };
@@ -118,6 +118,8 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
         .map(c => c.name)
         .join(', ')
     : "Chọn một hoặc nhiều lớp...";
+
+  const pointOptions = [0.25, 0.5, 1, 2, 3, 4, 5];
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto animate-in fade-in duration-500">
@@ -209,7 +211,19 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
             </div>
              <div className="space-y-2">
                 <Label>Điểm</Label>
-                <Input type="number" value={q.points} onChange={e => updateQuestion(index, { points: parseInt(e.target.value) || 0 })} className="rounded-xl"/>
+                <Select 
+                  value={q.points.toString()} 
+                  onValueChange={(v) => updateQuestion(index, { points: parseFloat(v) })}
+                >
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue placeholder="Chọn mức điểm" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {pointOptions.map(p => (
+                      <SelectItem key={p} value={p.toString()}>{p.toString().replace('.', ',')}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
              </div>
             {q.type === 'MULTIPLE_CHOICE' && (
               <div className="space-y-4 col-span-2">
