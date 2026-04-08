@@ -104,7 +104,7 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
       setQuestions(prev => [...prev, ...newQuestions]);
       toast({ 
         title: 'Thành công!', 
-        description: `Đã tạo ${newQuestions.length} câu hỏi bằng AI. Lưu ý: AI có thể mắc sai sót nhé.` 
+        description: `Đã tạo ${newQuestions.length} câu hỏi bằng AI. AI có thể mắc sai sót, hãy kiểm tra trước khi giao bài tập cho học sinh nhé.` 
       });
       setAiModalOpen(false);
     } catch (error) {
@@ -321,7 +321,7 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
                       </div>
                       <div className="flex items-center gap-1.5 text-muted-foreground">
                         <AlertCircle className="h-3 w-3" />
-                        <p className="text-[10px] italic">AI và có thể mắc sai sót nhé</p>
+                        <p className="text-[10px] italic">AI có thể mắc sai sót, hãy kiểm tra trước khi giao bài tập cho học sinh nhé</p>
                       </div>
                   </DialogFooter>
               </DialogContent>
