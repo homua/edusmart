@@ -51,7 +51,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ existingUsers, onLogin }) => {
       <Card className="w-full max-w-md shadow-2xl shadow-primary/5 border-primary/10 rounded-3xl">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-black">Đăng nhập</CardTitle>
-          <CardDescription>Truy cập vào hệ thống EduSmart Cloud</CardDescription>
+          <CardDescription>Truy cập vào hệ thống EduSmart</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLoginAttempt} className="space-y-6">
