@@ -10,25 +10,31 @@ interface LandingPageProps {
 
 const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
   return (
-    <div className="flex flex-col items-center justify-center py-12 md:py-20 text-center animate-in fade-in slide-in-from-bottom-8 duration-1000">
-      <div className="relative mb-8">
-        <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full scale-150 animate-pulse"></div>
-        <Logo className="w-32 h-32 relative z-10" />
+    <div className="flex flex-col items-center justify-center py-10 md:py-16 text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="relative mb-6">
+        <div className="absolute inset-0 bg-primary/15 blur-2xl rounded-full scale-125"></div>
+        <Logo className="w-24 h-24 md:w-28 md:h-28 relative z-10" />
       </div>
-      <h2 className="text-2xl md:text-4xl font-black mb-8 tracking-tighter leading-[1.1] max-w-4xl select-none">
-        <span className="block text-foreground uppercase">
-          Hệ thống Giáo dục
-        </span>
-        <span className="block text-primary uppercase">
-          Thông minh
-        </span>
-      </h2>
-      <p className="text-muted-foreground text-[10px] font-medium mb-10 max-w-lg leading-relaxed opacity-60 italic">
-        Học sinh: Vàng Thị Lan Anh <br/> Giáo viên hướng dẫn: Hồ A Mua
-      </p>
+      
+      <div className="space-y-2 mb-8">
+        <h2 className="text-3xl md:text-5xl font-black tracking-tighter leading-none">
+          <span className="block text-foreground uppercase">HỆ THỐNG</span>
+          <span className="block text-primary uppercase">GIÁO DỤC THÔNG MINH</span>
+        </h2>
+        <div className="h-1 w-20 bg-accent mx-auto rounded-full"></div>
+      </div>
+
+      <div className="bg-muted/30 p-4 rounded-2xl mb-8 max-w-xs mx-auto border border-border/50">
+        <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest leading-relaxed">
+          Học sinh: <span className="text-foreground">Vàng Thị Lan Anh</span> <br/> 
+          GV hướng dẫn: <span className="text-foreground">Hồ A Mua</span>
+        </p>
+      </div>
+
       <Button 
         onClick={onNavigate} 
-        className="px-8 py-6 text-lg font-black rounded-full shadow-none hover:bg-primary/90 transition-all"
+        size="lg"
+        className="px-10 py-7 text-lg font-black rounded-2xl shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all hover:scale-105 active:scale-95"
       >
         Đăng nhập ngay
       </Button>

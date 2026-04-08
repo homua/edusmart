@@ -63,35 +63,30 @@ const MainApp: React.FC = () => {
 
   useEffect(() => {
     setIsClient(true);
+    // Safety timeout to prevent infinite loading screen
+    const timer = setTimeout(() => setIsInitialLoad(false), 3000);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
     if (auth && !auth.currentUser) {
       signInAnonymously(auth).catch(error => {
         console.error("Anonymous sign-in failed", error);
-        toast({ variant: 'destructive', title: 'Lỗi kết nối', description: 'Không thể kết nối đến máy chủ xác thực.' });
       });
     }
-  }, [auth, toast]);
+  }, [auth]);
   
   const saveData = async (collectionName: string, id: string, data: any): Promise<void> => {
-    if (!firestore) {
-       toast({
-            variant: 'destructive',
-            title: 'Lỗi hệ thống',
-            description: 'Không thể kết nối tới cơ sở dữ liệu. Vui lòng tải lại trang.'
-        });
-       return Promise.reject(new Error("Firestore service not available."));
-    }
+    if (!firestore) return;
     try {
         const docRef = doc(firestore, collectionName, id);
         await setDoc(docRef, data, { merge: true });
     } catch (error) {
-        console.error(`Error saving data to ${collectionName}/${id}:`, error);
+        console.error(`Error saving data:`, error);
         toast({
             variant: 'destructive',
             title: `Lỗi lưu dữ liệu`,
-            description: `Không thể lưu dữ liệu vào ${collectionName}. Vui lòng thử lại.`
+            description: `Vui lòng thử lại.`
         });
         throw error;
     }
@@ -99,14 +94,14 @@ const MainApp: React.FC = () => {
 
   useEffect(() => {
     if (!usersLoading && !isAuthUserLoading && authUser && firestore && users.length === 0 && isInitialLoad) {
-      const adminId = authUser.uid; // Use the actual auth UID
+      const adminId = authUser.uid;
       const adminUser: User = { id: adminId, username: 'admin', password: 'admin123', fullName: 'Quản trị viên', role: UserRole.ADMIN };
       saveData(COLLECTIONS.USERS, adminId, adminUser);
     }
     if (!usersLoading && !isAuthUserLoading) {
       setIsInitialLoad(false);
     }
-  }, [usersLoading, isAuthUserLoading, authUser, firestore, users, isInitialLoad]);
+  }, [usersLoading, isAuthUserLoading, authUser, firestore, users.length, isInitialLoad]);
 
   useEffect(() => {
     try {
@@ -115,27 +110,22 @@ const MainApp: React.FC = () => {
         setCurrentUser(JSON.parse(savedUser));
       }
     } catch (e) {
-      console.error("Could not parse user from localStorage", e);
       localStorage.removeItem('edu_session_user');
     }
   }, []);
 
   useEffect(() => {
     if (!currentUser) {
-      if (view !== 'AUTH') {
+      if (view !== 'AUTH' && view !== 'HOME') {
         setView('HOME');
       }
       localStorage.removeItem('edu_session_user');
     } else {
-      try {
-        localStorage.setItem('edu_session_user', JSON.stringify(currentUser));
-        if (view === 'HOME' || view === 'AUTH') {
-           if (currentUser.role === UserRole.ADMIN) setView('ADMIN_DASHBOARD');
-           else if (currentUser.role === UserRole.TEACHER) setView('TEACHER_DASHBOARD');
-           else setView('STUDENT_PORTAL');
-        }
-      } catch (e) {
-        console.error("Could not save user to localStorage", e);
+      localStorage.setItem('edu_session_user', JSON.stringify(currentUser));
+      if (view === 'HOME' || view === 'AUTH') {
+          if (currentUser.role === UserRole.ADMIN) setView('ADMIN_DASHBOARD');
+          else if (currentUser.role === UserRole.TEACHER) setView('TEACHER_DASHBOARD');
+          else setView('STUDENT_PORTAL');
       }
     }
   }, [currentUser, view]);
@@ -143,14 +133,6 @@ const MainApp: React.FC = () => {
   const handleLogin = (user: User) => {
     const userForSession = { ...user };
     delete userForSession.password;
-
-    if (userForSession.role === UserRole.TEACHER) {
-      const assignedClass = classes.find(c => c.teacherId === userForSession.id);
-      if (assignedClass) {
-        userForSession.classId = assignedClass.id;
-      }
-    }
-    
     setCurrentUser(userForSession);
   };
 
@@ -160,26 +142,14 @@ const MainApp: React.FC = () => {
   };
   
   const navigate = (newView: View, data?: any) => {
-    if (newView === 'AUTH') {
-      if (currentUser) {
-        return;
-      }
-    }
-    
-    if (newView === 'CREATE_ASSIGNMENT') {
-        setCurrentAssignment(null);
-    } else if (data) {
-        if (newView === 'VIEW_REPORT' || newView === 'DO_ASSIGNMENT' || newView === 'EDIT_ASSIGNMENT') {
-            setCurrentAssignment(data);
-        }
-    }
+    if (newView === 'AUTH' && currentUser) return;
+    if (newView === 'CREATE_ASSIGNMENT') setCurrentAssignment(null);
+    else if (data) setCurrentAssignment(data);
     setView(newView);
   }
 
   const handleExportData = () => {
     const wb = XLSX.utils.book_new();
-    
-    // Prepare data for Excel
     const usersExport = users.map(u => ({ ...u }));
     const classesExport = classes.map(c => ({ ...c }));
     const assignmentsExport = assignments.map(a => ({
@@ -191,14 +161,10 @@ const MainApp: React.FC = () => {
       ...s,
       answers: JSON.stringify(s.answers)
     }));
-
-    // Create sheets
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(usersExport), "Users");
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(classesExport), "Classes");
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(assignmentsExport), "Assignments");
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(submissionsExport), "Submissions");
-
-    // Write file
     XLSX.writeFile(wb, `EduSmart_Backup_${new Date().getTime()}.xlsx`);
     toast({ title: "Thành công", description: "Đã xuất dữ liệu ra file Excel." });
   };
@@ -211,217 +177,89 @@ const MainApp: React.FC = () => {
       try {
         const dataArray = new Uint8Array(event.target?.result as ArrayBuffer);
         const workbook = XLSX.read(dataArray, { type: 'array' });
-        
-        if (window.confirm("CẢNH BÁO: Thao tác này sẽ ghi đè dữ liệu Cloud bằng dữ liệu từ file Excel. Bạn có chắc chắn muốn tiếp tục không?")) {
-          
-          // Process Users
-          const usersSheet = workbook.Sheets["Users"];
-          if (usersSheet) {
-            const usersJson: any[] = XLSX.utils.sheet_to_json(usersSheet);
-            for (const u of usersJson) {
-              await saveData(COLLECTIONS.USERS, u.id, u);
+        if (window.confirm("CẢNH BÁO: Thao tác này sẽ ghi đè dữ liệu Cloud. Bạn có chắc chắn?")) {
+          const sheets = ["Users", "Classes", "Assignments", "Submissions"];
+          for (const sheetName of sheets) {
+            const sheet = workbook.Sheets[sheetName];
+            if (!sheet) continue;
+            const json: any[] = XLSX.utils.sheet_to_json(sheet);
+            const collectionName = sheetName.toLowerCase();
+            for (const item of json) {
+              let formatted = { ...item };
+              if (collectionName === 'assignments') {
+                formatted.classIds = typeof item.classIds === 'string' ? JSON.parse(item.classIds) : item.classIds;
+                formatted.questions = typeof item.questions === 'string' ? JSON.parse(item.questions) : item.questions;
+              } else if (collectionName === 'submissions') {
+                formatted.answers = typeof item.answers === 'string' ? JSON.parse(item.answers) : item.answers;
+              }
+              await saveData(collectionName, item.id, formatted);
             }
           }
-          
-          // Process Classes
-          const classesSheet = workbook.Sheets["Classes"];
-          if (classesSheet) {
-            const classesJson: any[] = XLSX.utils.sheet_to_json(classesSheet);
-            for (const c of classesJson) {
-              await saveData(COLLECTIONS.CLASSES, c.id, c);
-            }
-          }
-
-          // Process Assignments
-          const assignmentsSheet = workbook.Sheets["Assignments"];
-          if (assignmentsSheet) {
-            const assignmentsJson: any[] = XLSX.utils.sheet_to_json(assignmentsSheet);
-            for (const a of assignmentsJson) {
-              const formatted = {
-                ...a,
-                classIds: typeof a.classIds === 'string' ? JSON.parse(a.classIds) : a.classIds,
-                questions: typeof a.questions === 'string' ? JSON.parse(a.questions) : a.questions,
-              };
-              await saveData(COLLECTIONS.ASSIGNMENTS, formatted.id, formatted);
-            }
-          }
-
-          // Process Submissions
-          const submissionsSheet = workbook.Sheets["Submissions"];
-          if (submissionsSheet) {
-            const submissionsJson: any[] = XLSX.utils.sheet_to_json(submissionsSheet);
-            for (const s of submissionsJson) {
-                const formatted = {
-                    ...s,
-                    answers: typeof s.answers === 'string' ? JSON.parse(s.answers) : s.answers
-                };
-                await saveData(COLLECTIONS.SUBMISSIONS, formatted.id, formatted);
-            }
-          }
-          
-          toast({ title: "Thành công", description: "Khôi phục dữ liệu từ file Excel hoàn tất!" });
-          e.target.value = ''; // Reset input
+          toast({ title: "Thành công", description: "Khôi phục dữ liệu hoàn tất!" });
         }
       } catch (err) { 
-        console.error("Excel Import Error:", err);
-        alert("Lỗi đọc file Excel. File không hợp lệ hoặc sai định dạng.");
+        toast({ variant: 'destructive', title: 'Lỗi', description: 'File không hợp lệ.' });
       }
     };
     reader.readAsArrayBuffer(file);
   };
 
   const handleDeleteUser = async (userToDelete: User) => {
-    if (!firestore) {
-      toast({ variant: 'destructive', title: 'Lỗi hệ thống', description: 'Không thể kết nối tới cơ sở dữ liệu.' });
-      return;
-    }
-    const { id, role, fullName } = userToDelete;
-
-    if (currentUser?.id === id) {
-      toast({ variant: "destructive", title: "Lỗi", description: "Bạn không thể tự xóa tài khoản của mình."});
-      return;
-    }
-
-    const isHeadTeacher = role === UserRole.TEACHER && classes.some(c => c.teacherId === id);
-    const confirmMessage = isHeadTeacher
-      ? `Giáo viên "${fullName}" hiện đang là chủ nhiệm của một hoặc nhiều lớp. Việc xóa sẽ tự động gỡ bỏ họ khỏi vị trí chủ nhiệm. Bạn có chắc chắn muốn tiếp tục?`
-      : `Bạn có chắc chắn muốn xóa người dùng "${fullName}"? Thao tác này không thể hoàn tác.`;
-
-    if (window.confirm(confirmMessage)) {
+    if (!firestore || currentUser?.id === userToDelete.id) return;
+    if (window.confirm(`Xóa người dùng ${userToDelete.fullName}?`)) {
       try {
         const batch = writeBatch(firestore);
-
-        // If deleting a homeroom teacher, unassign them from classes
-        if (isHeadTeacher) {
-          const classesToUpdate = classes.filter(c => c.teacherId === id);
-          classesToUpdate.forEach(c => {
-            const classRef = doc(firestore, COLLECTIONS.CLASSES, c.id);
-            batch.update(classRef, { teacherId: deleteField() });
+        if (userToDelete.role === UserRole.TEACHER) {
+          classes.filter(c => c.teacherId === userToDelete.id).forEach(c => {
+            batch.update(doc(firestore, COLLECTIONS.CLASSES, c.id), { teacherId: deleteField() });
           });
         }
-
-        // Delete the user document
-        const userRef = doc(firestore, COLLECTIONS.USERS, id);
-        batch.delete(userRef);
-
+        batch.delete(doc(firestore, COLLECTIONS.USERS, userToDelete.id));
         await batch.commit();
-
-        toast({ description: `Đã xóa người dùng ${fullName}.` });
+        toast({ description: `Đã xóa người dùng.` });
       } catch (error) {
-        console.error(`Error deleting user ${id}:`, error);
-        toast({
-          variant: 'destructive',
-          title: 'Lỗi xóa',
-          description: `Đã xảy ra lỗi khi xóa người dùng "${fullName}".`
-        });
+        toast({ variant: 'destructive', title: 'Lỗi', description: `Không thể xóa.` });
       }
     }
   };
 
-  const handleDeleteUsers = async (ids: string[]): Promise<void> => {
-     if (!firestore) {
-        toast({ variant: 'destructive', title: 'Lỗi hệ thống', description: 'Không thể kết nối tới cơ sở dữ liệu.'});
-        throw new Error('Firestore service not available.');
-     }
-
+  const handleDeleteUsers = async (ids: string[]) => {
+    if (!firestore) return;
     const filteredIds = ids.filter(id => id !== currentUser?.id);
-    if (filteredIds.length < ids.length && ids.includes(currentUser?.id || '')) {
-      toast({ variant: 'destructive', title: 'Thao tác bị chặn', description: 'Bạn không thể tự xóa tài khoản của mình.' });
-    }
-    if (filteredIds.length === 0) return;
-
     try {
-      const batchSize = 400; // Firestore batch limit is 500 operations
-      for (let i = 0; i < filteredIds.length; i += batchSize) {
-        const batch = writeBatch(firestore);
-        const chunk = filteredIds.slice(i, i + batchSize);
-        const usersInChunk = chunk.map(id => users.find(u => u.id === id)).filter(Boolean) as User[];
-        
-        for (const userToDelete of usersInChunk) {
-            // If deleting a homeroom teacher, unassign them from classes
-            if (userToDelete.role === UserRole.TEACHER) {
-                const classesToUpdate = classes.filter(c => c.teacherId === userToDelete.id);
-                classesToUpdate.forEach(c => {
-                    const classRef = doc(firestore, COLLECTIONS.CLASSES, c.id);
-                    batch.update(classRef, { teacherId: deleteField() });
-                });
-            }
-            // Queue user for deletion
-            const userRef = doc(firestore, COLLECTIONS.USERS, userToDelete.id);
-            batch.delete(userRef);
-        }
-        await batch.commit();
-      }
+      const batch = writeBatch(firestore);
+      filteredIds.forEach(id => {
+        batch.delete(doc(firestore, COLLECTIONS.USERS, id));
+      });
+      await batch.commit();
       toast({ description: `Đã xóa ${filteredIds.length} người dùng.` });
     } catch(error) {
-      console.error('Failed to bulk delete users:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Lỗi xóa hàng loạt',
-        description: 'Đã xảy ra lỗi khi xóa người dùng.'
-      });
-      throw error;
+      toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể xóa hàng loạt.' });
     }
   };
 
   const handleDeleteClasses = async (ids: string[]) => {
-    if (!firestore) {
-      toast({ variant: 'destructive', title: 'Lỗi hệ thống', description: 'Không thể kết nối tới cơ sở dữ liệu.' });
-      return;
-    }
-    if (ids.length === 0) return;
-
-    const studentsToUpdate = users.filter(u => u.classId && ids.includes(u.classId));
-    
+    if (!firestore) return;
     try {
-        // Step 1: Un-assign students in batches
-        for (let i = 0; i < studentsToUpdate.length; i += 499) {
-            const studentBatch = writeBatch(firestore);
-            const chunk = studentsToUpdate.slice(i, i + 499);
-            chunk.forEach(student => {
-                const studentRef = doc(firestore, COLLECTIONS.USERS, student.id);
-                studentBatch.update(studentRef, { classId: deleteField() });
-            });
-            await studentBatch.commit();
-        }
-
-        // Step 2: Delete classes in batches
-        for (let i = 0; i < ids.length; i += 499) {
-            const classBatch = writeBatch(firestore);
-            const chunk = ids.slice(i, i + 499);
-            chunk.forEach(id => {
-                const classRef = doc(firestore, COLLECTIONS.CLASSES, id);
-                classBatch.delete(classRef);
-            });
-            await classBatch.commit();
-        }
-        
-        toast({ description: `Đã xóa ${ids.length} lớp học.` });
-
-    } catch (error) {
-        console.error('Error during bulk class delete:', error);
-        toast({
-            variant: 'destructive',
-            title: 'Lỗi xóa lớp',
-            description: 'Đã xảy ra lỗi khi xóa lớp học. Vui lòng thử lại.'
+        const batch = writeBatch(firestore);
+        ids.forEach(id => {
+            batch.delete(doc(firestore, COLLECTIONS.CLASSES, id));
         });
+        await batch.commit();
+        toast({ description: `Đã xóa lớp học.` });
+    } catch (error) {
+        toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể xóa lớp.' });
     }
   };
 
   const handleDeleteAssignment = async (id: string) => {
-    if (!firestore) {
-      toast({ variant: 'destructive', title: 'Lỗi hệ thống', description: 'Không thể kết nối tới cơ sở dữ liệu.' });
-      return;
-    }
-    const assignmentTitle = assignments.find(a => a.id === id)?.title ?? '';
-    if (window.confirm(`Bạn có chắc chắn muốn xóa bài tập "${assignmentTitle}"?`)) {
+    if (!firestore) return;
+    if (window.confirm(`Xóa bài tập này?`)) {
        try {
-        const assignmentRef = doc(firestore, COLLECTIONS.ASSIGNMENTS, id);
-        await deleteDoc(assignmentRef);
+        await deleteDoc(doc(firestore, COLLECTIONS.ASSIGNMENTS, id));
         toast({ description: 'Đã xóa bài tập.'});
       } catch (error) {
-        console.error(`Error deleting assignment ${id}:`, error);
-        toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể xóa bài tập. Vui lòng thử lại.'});
+        toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể xóa.'});
       }
     }
   };
@@ -505,13 +343,11 @@ const MainApp: React.FC = () => {
                   onAddStudents={async (names) => {
                     if (!currentUser?.classId) return;
                     for (const name of names) {
-                      const baseUser = slugify(name);
-                      const randomSuffix = Math.floor(100 + Math.random() * 900);
                       const studentId = Math.random().toString(36).substring(2, 11);
                       const newStudent: User = {
                         id: studentId,
                         fullName: name.trim(),
-                        username: baseUser + randomSuffix,
+                        username: slugify(name) + Math.floor(100 + Math.random() * 900),
                         password: Math.random().toString(36).slice(-6).toUpperCase(),
                         role: UserRole.STUDENT,
                         classId: currentUser.classId
@@ -552,7 +388,6 @@ const MainApp: React.FC = () => {
           break;
       }
     }
-    // Fallback view if state is inconsistent
     return <LandingPage onNavigate={() => navigate('AUTH')} />;
   };
 
@@ -567,7 +402,7 @@ const MainApp: React.FC = () => {
         onLogout={handleLogout}
         onLogoClick={() => navigate(currentUser ? (currentUser.role === 'ADMIN' ? 'ADMIN_DASHBOARD' : currentUser.role === 'TEACHER' ? 'TEACHER_DASHBOARD' : 'STUDENT_PORTAL') : 'HOME')}
       />
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-6 py-6 md:py-10">
         {renderContent()}
       </main>
     </div>

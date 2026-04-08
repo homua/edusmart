@@ -12,28 +12,22 @@ const Logo = ({ className, ...props }: LogoProps) => {
         viewBox="0 0 100 100"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className="w-full h-full drop-shadow-2xl"
+        className="w-full h-full drop-shadow-xl"
       >
-        {/* Background rounded container with modern gradient */}
-        <rect x="5" y="5" width="90" height="90" rx="28" fill="url(#logo-gradient)" />
+        <rect x="5" y="5" width="90" height="90" rx="24" fill="url(#logo-gradient)" />
         
-        {/* Stylized Open Book pages */}
         <path
-          d="M50 75V40M50 40C40 35 22 35 22 35V65C22 65 38 65 50 70M50 40C60 35 78 35 78 35V65C78 65 62 65 50 70"
+          d="M50 72V42M50 42C42 38 25 38 25 38V64C25 64 38 64 50 68M50 42C58 38 75 38 75 38V64C75 64 62 64 50 68"
           stroke="white"
           strokeWidth="6"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
         
-        {/* Central Sparkle of intelligence/tech */}
         <path
-          d="M50 12L53 20L61 23L53 26L50 34L47 26L39 23L47 20L50 12Z"
+          d="M50 15L53 22L60 25L53 28L50 35L47 28L40 25L47 22L50 15Z"
           fill="white"
         />
-        
-        {/* Decorative inner glow */}
-        <circle cx="50" cy="50" r="40" stroke="white" strokeOpacity="0.1" strokeWidth="0.5" />
 
         <defs>
           <linearGradient id="logo-gradient" x1="5" y1="5" x2="95" y2="95" gradientUnits="userSpaceOnUse">
