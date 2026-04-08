@@ -24,10 +24,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
         <div className="h-1 w-20 bg-accent mx-auto rounded-full"></div>
       </div>
 
-      <div className="bg-muted/30 p-4 rounded-2xl mb-8 max-w-xs mx-auto border border-border/50">
-        <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest leading-relaxed">
-          Học sinh: <span className="text-foreground">Vàng Thị Lan Anh</span> <br/> 
-          GV hướng dẫn: <span className="text-foreground">Hồ A Mua</span>
+      <div className="bg-muted/10 p-3 rounded-2xl mb-8 max-w-xs mx-auto border border-border/30">
+        <p className="text-[9px] font-medium text-muted-foreground/50 uppercase tracking-[0.2em] leading-relaxed">
+          Học sinh: <span className="text-foreground/60">Vàng Thị Lan Anh</span> <br/> 
+          GV hướng dẫn: <span className="text-foreground/60">Hồ A Mua</span>
         </p>
       </div>
 
