@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Trash2, ArrowLeft, ChevronDown, Bot } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, ChevronDown, Bot, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { generateQuestionsAI, type GenerateQuestionsInput } from '@/ai/flows/generate-questions-flow';
@@ -102,7 +102,10 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
       };
       const newQuestions = await generateQuestionsAI(input);
       setQuestions(prev => [...prev, ...newQuestions]);
-      toast({ title: 'Thành công!', description: `Đã tạo ${newQuestions.length} câu hỏi bằng AI.` });
+      toast({ 
+        title: 'Thành công!', 
+        description: `Đã tạo ${newQuestions.length} câu hỏi bằng AI. Lưu ý: AI có thể mắc sai sót nhé.` 
+      });
       setAiModalOpen(false);
     } catch (error) {
       console.error(error);
@@ -309,11 +312,17 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
                           <Input type="number" value={aiQuestionCount} onChange={e => setAiQuestionCount(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))} min="1" max="10"/>
                       </div>
                   </div>
-                  <DialogFooter>
-                      <Button variant="ghost" onClick={() => setAiModalOpen(false)}>Hủy</Button>
-                      <Button onClick={handleGenerateQuestions} disabled={isGenerating || !subject || !title}>
-                          {isGenerating ? "Đang tạo..." : "Tạo câu hỏi"}
-                      </Button>
+                  <DialogFooter className="sm:flex-col items-center gap-3">
+                      <div className="flex w-full justify-end gap-2">
+                          <Button variant="ghost" onClick={() => setAiModalOpen(false)}>Hủy</Button>
+                          <Button onClick={handleGenerateQuestions} disabled={isGenerating || !subject || !title}>
+                              {isGenerating ? "Đang tạo..." : "Tạo câu hỏi"}
+                          </Button>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <AlertCircle className="h-3 w-3" />
+                        <p className="text-[10px] italic">AI và có thể mắc sai sót nhé</p>
+                      </div>
                   </DialogFooter>
               </DialogContent>
           </Dialog>
