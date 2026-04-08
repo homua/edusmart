@@ -476,7 +476,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           <ChevronDown className="h-4 w-4 opacity-50" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)]">
+                      <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)] max-h-[300px] overflow-y-auto">
                         {allTeachers.map(t => (
                           <DropdownMenuCheckboxItem
                             key={t.id}
@@ -556,7 +556,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           <ChevronDown className="h-4 w-4 opacity-50" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)]">
+                      <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)] max-h-[300px] overflow-y-auto">
                         {allTeachers.map(t => (
                           <DropdownMenuCheckboxItem
                             key={t.id}
