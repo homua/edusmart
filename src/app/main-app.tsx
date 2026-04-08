@@ -269,6 +269,13 @@ const MainApp: React.FC = () => {
     }
   };
 
+  const handleUpdateSelf = async (updatedUser: User) => {
+    await saveData(COLLECTIONS.USERS, updatedUser.id, updatedUser);
+    const userForSession = { ...updatedUser };
+    delete userForSession.password;
+    setCurrentUser(userForSession);
+  };
+
   const renderContent = () => {
     if (view === 'HOME' && !currentUser) return <LandingPage onNavigate={() => navigate('AUTH')} />;
     if (view === 'AUTH') return <AuthForm existingUsers={users} onLogin={handleLogin} />;
@@ -309,6 +316,7 @@ const MainApp: React.FC = () => {
                   onEdit={(a) => navigate('EDIT_ASSIGNMENT', a)}
                   onDelete={handleDeleteAssignment}
                   onViewRoster={() => navigate('CLASS_ROSTER')}
+                  onUpdateUser={handleUpdateSelf}
                 />
               );
             case 'CREATE_ASSIGNMENT':
@@ -369,7 +377,7 @@ const MainApp: React.FC = () => {
               return (
                 <StudentPortal
                   assignments={assignments.filter(a => a.classIds.includes(currentUser.classId || ''))}
-                  submissions={submissions.filter(s => s.studentId === currentUser.id)}
+                  submissions={submissions.filter(s => s.assignmentId === currentUser.id)}
                   currentUser={currentUser}
                   onStart={(a) => navigate('DO_ASSIGNMENT', a)}
                 />
