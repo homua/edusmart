@@ -34,7 +34,8 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   onDelete,
   onViewRoster,
 }) => {
-  const currentClass = classes.find(c => c.id === currentUser.classId);
+  // Find class by teacher assignment instead of teacher's own classId
+  const currentClass = classes.find(c => c.teacherId === currentUser.id);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -44,7 +45,9 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
           <p className="text-muted-foreground">Lớp chủ nhiệm: <span className="font-bold text-primary">{currentClass?.name || 'Chưa có'}</span></p>
         </div>
         <div className="flex items-center gap-2">
-          <Button onClick={onViewRoster} variant="outline"><Users className="mr-2" /> Quản lý lớp</Button>
+          {currentClass && (
+            <Button onClick={onViewRoster} variant="outline"><Users className="mr-2" /> Quản lý lớp</Button>
+          )}
           <Button onClick={onCreateNew}><Plus className="mr-2" /> Tạo bài tập mới</Button>
         </div>
       </div>

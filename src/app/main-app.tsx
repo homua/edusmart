@@ -284,7 +284,11 @@ const MainApp: React.FC = () => {
                 onDeleteUser={handleDeleteUser}
                 onDeleteUsers={handleDeleteUsers}
                 onAddClass={async (c) => await saveData(COLLECTIONS.CLASSES, c.id, c)}
-                onUpdateClass={async (c) => await saveData(COLLECTIONS.CLASSES, c.id, c)}
+                onUpdateClass={async (c) => {
+                   await saveData(COLLECTIONS.CLASSES, c.id, c);
+                   // If a teacher is assigned, we could update their classId too, 
+                   // but logic now uses c.teacherId as the primary link.
+                }}
                 onDeleteClasses={handleDeleteClasses}
                 onExport={handleExportData}
                 onImport={handleImportData}
@@ -293,6 +297,7 @@ const MainApp: React.FC = () => {
           }
           break;
         case UserRole.TEACHER:
+          const teacherClass = classes.find(c => c.teacherId === currentUser.id);
           switch (view) {
             case 'TEACHER_DASHBOARD':
               return (
@@ -337,11 +342,11 @@ const MainApp: React.FC = () => {
                 <ClassRoster
                   currentUser={currentUser}
                   classes={classes}
-                  students={users.filter(u => u.role === UserRole.STUDENT && u.classId === currentUser.classId)}
+                  students={users.filter(u => u.role === UserRole.STUDENT && u.classId === teacherClass?.id)}
                   onBack={() => navigate('TEACHER_DASHBOARD')}
                   onDeleteStudents={handleDeleteUsers}
                   onAddStudents={async (names) => {
-                    if (!currentUser?.classId) return;
+                    if (!teacherClass) return;
                     for (const name of names) {
                       const studentId = Math.random().toString(36).substring(2, 11);
                       const newStudent: User = {
@@ -350,7 +355,7 @@ const MainApp: React.FC = () => {
                         username: slugify(name) + Math.floor(100 + Math.random() * 900),
                         password: Math.random().toString(36).slice(-6).toUpperCase(),
                         role: UserRole.STUDENT,
-                        classId: currentUser.classId
+                        classId: teacherClass.id
                       };
                       await saveData(COLLECTIONS.USERS, studentId, newStudent);
                     }
