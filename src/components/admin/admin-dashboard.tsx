@@ -11,11 +11,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Trash2, Upload, Download, UserPlus, Pencil } from 'lucide-react';
+import { Plus, Trash2, Upload, Download, UserPlus, Pencil, FileDown } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import * as XLSX from 'xlsx';
 
 interface AdminDashboardProps {
   users: User[];
@@ -173,6 +174,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const handleBulkDeleteStudents = async () => {
       await onDeleteUsers(selectedStudents);
       setSelectedStudents([]);
+  };
+
+  const handleExportTeachersExcel = () => {
+    const allTeachers = users.filter(u => u.role === 'TEACHER');
+    const teachersToExport = allTeachers.map(t => ({
+      'Họ và tên': t.fullName,
+      'Tên đăng nhập': t.username,
+      'Mật khẩu': t.password,
+      'Vai trò': 'Giáo viên'
+    }));
+    const ws = XLSX.utils.json_to_sheet(teachersToExport);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Danh sach Giao vien");
+    XLSX.writeFile(wb, `Danh_sach_Giao_vien_${new Date().getTime()}.xlsx`);
+    toast({ title: "Thành công", description: "Đã xuất danh sách giáo viên." });
   };
 
 
@@ -376,11 +392,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </Table>
               </TabsContent>
               <TabsContent value="teachers" className="mt-4 space-y-4">
-                 <div className="flex items-center justify-end gap-2">
+                 <div className="flex items-center justify-between gap-2">
+                    <Button variant="outline" size="sm" onClick={handleExportTeachersExcel}>
+                      <FileDown className="mr-2 h-4 w-4" />
+                      Xuất danh sách GV
+                    </Button>
                     {selectedTeachers.length > 0 && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="destructive">
+                          <Button variant="destructive" size="sm">
                             <Trash2 className="mr-2 h-4 w-4" />
                             Xóa đã chọn ({selectedTeachers.length})
                           </Button>

@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { ArrowLeft, Plus, Sparkles, Trash2, User as UserIcon } from 'lucide-react';
+import { ArrowLeft, Plus, Sparkles, Trash2, User as UserIcon, FileDown } from 'lucide-react';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -24,6 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import * as XLSX from 'xlsx';
 
 interface ClassRosterProps {
   currentUser: User;
@@ -96,9 +97,24 @@ const ClassRoster: React.FC<ClassRosterProps> = ({
       await onDeleteStudents(selectedStudents);
       setSelectedStudents([]);
     } catch(error) {
-      // The error toast is handled by the parent component.
       console.error("Bulk delete failed:", error);
     }
+  };
+
+  const handleExportStudentsExcel = () => {
+    if (!currentClass) return;
+    const studentsToExport = students.map(s => ({
+      'Lớp': currentClass.name,
+      'Họ và tên': s.fullName,
+      'Tên đăng nhập': s.username,
+      'Mật khẩu': s.password,
+      'Vai trò': 'Học sinh'
+    }));
+    const ws = XLSX.utils.json_to_sheet(studentsToExport);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Danh sach Hoc sinh");
+    XLSX.writeFile(wb, `Danh_sach_Hoc_sinh_${currentClass.name.replace(/\s+/g, '_')}_${new Date().getTime()}.xlsx`);
+    toast({ title: "Thành công", description: "Đã xuất danh sách học sinh." });
   };
 
   return (
@@ -181,10 +197,14 @@ const ClassRoster: React.FC<ClassRosterProps> = ({
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Danh sách lớp</CardTitle>
             <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={handleExportStudentsExcel}>
+                  <FileDown className="mr-2 h-4 w-4" />
+                  Xuất danh sách HS
+                </Button>
                 {selectedStudents.length > 0 && (
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button variant="destructive">
+                            <Button variant="destructive" size="sm">
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 Xóa đã chọn ({selectedStudents.length})
                             </Button>
@@ -256,5 +276,3 @@ const ClassRoster: React.FC<ClassRosterProps> = ({
 };
 
 export default ClassRoster;
-
-    
