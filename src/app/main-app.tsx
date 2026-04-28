@@ -1,14 +1,15 @@
-
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useUser, useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { collection, doc, setDoc, writeBatch, deleteDoc, deleteField } from 'firebase/firestore';
-import { signInAnonymously } from 'firebase/auth';
+import { collection, doc, writeBatch } from 'firebase/firestore';
+import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
+import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import * as XLSX from 'xlsx';
 
 import { UserRole, type View, type Assignment, type Submission, type User, type Class } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { COLLECTIONS } from '@/lib/db';
 
 import { parseStudentListAI } from '@/ai/flows/parse-student-list';
 import { slugify } from '@/lib/utils';
@@ -23,13 +24,6 @@ import ReportView from '@/components/teacher/report-view';
 import ClassRoster from '@/components/teacher/class-roster';
 import StudentPortal from '@/components/student/student-portal';
 import AssignmentRunner from '@/components/student/assignment-runner';
-
-const COLLECTIONS = {
-  USERS: 'users',
-  CLASSES: 'classes',
-  ASSIGNMENTS: 'assignments',
-  SUBMISSIONS: 'submissions',
-};
 
 const MainApp: React.FC = () => {
   const { firestore, auth } = useFirebase();
@@ -63,42 +57,29 @@ const MainApp: React.FC = () => {
 
   useEffect(() => {
     setIsClient(true);
-    const timer = setTimeout(() => setIsInitialLoad(false), 3000);
+    const timer = setTimeout(() => setIsInitialLoad(false), 2000);
     return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
     if (auth && !auth.currentUser) {
-      signInAnonymously(auth).catch(error => {
-        console.error("Anonymous sign-in failed", error);
-      });
+      initiateAnonymousSignIn(auth);
     }
   }, [auth]);
   
-  const saveData = async (collectionName: string, id: string, data: any): Promise<void> => {
+  const saveData = useCallback((collectionName: string, id: string, data: any) => {
     if (!firestore) return;
-    try {
-        const docRef = doc(firestore, collectionName, id);
-        await setDoc(docRef, data, { merge: true });
-    } catch (error) {
-        console.error(`Error saving data:`, error);
-        toast({
-            variant: 'destructive',
-            title: `Lỗi lưu dữ liệu`,
-            description: `Vui lòng thử lại.`
-        });
-        throw error;
-    }
-  };
+    const docRef = doc(firestore, collectionName, id);
+    setDocumentNonBlocking(docRef, data, { merge: true });
+  }, [firestore]);
 
+  // Initial Admin creation - only if needed and not already creating
   useEffect(() => {
     if (!usersLoading && !isAuthUserLoading && authUser && firestore && users.length === 0 && isInitialLoad) {
       const adminId = authUser.uid;
       const adminUser: User = { id: adminId, username: 'admin', password: 'admin123', fullName: 'Quản trị viên', role: UserRole.ADMIN };
-      saveData(COLLECTIONS.USERS, adminId, adminUser);
-    }
-    if (!usersLoading && !isAuthUserLoading) {
-      setIsInitialLoad(false);
+      const docRef = doc(firestore, COLLECTIONS.USERS, adminId);
+      setDocumentNonBlocking(docRef, adminUser, { merge: true });
     }
   }, [usersLoading, isAuthUserLoading, authUser, firestore, users.length, isInitialLoad]);
 
@@ -173,7 +154,7 @@ const MainApp: React.FC = () => {
 
   const handleImportData = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !firestore) return;
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
@@ -197,7 +178,7 @@ const MainApp: React.FC = () => {
                 } else if (collectionName === 'submissions') {
                   formatted.answers = typeof item.answers === 'string' ? JSON.parse(item.answers) : item.answers;
                 }
-                await saveData(collectionName, item.id, formatted);
+                saveData(collectionName, item.id, formatted);
               }
             }
             toast({ title: "Thành công", description: "Khôi phục dữ liệu hoàn tất!" });
@@ -210,10 +191,9 @@ const MainApp: React.FC = () => {
     reader.readAsArrayBuffer(file);
   };
 
-  const handleDeleteUser = async (userToDelete: User) => {
+  const handleDeleteUser = (userToDelete: User) => {
     if (!firestore || currentUser?.id === userToDelete.id) return;
     if (window.confirm(`Xóa người dùng ${userToDelete.fullName}?`)) {
-      try {
         const batch = writeBatch(firestore);
         if (userToDelete.role === UserRole.TEACHER) {
           classes.filter(c => c.teacherIds?.includes(userToDelete.id)).forEach(c => {
@@ -222,57 +202,39 @@ const MainApp: React.FC = () => {
           });
         }
         batch.delete(doc(firestore, COLLECTIONS.USERS, userToDelete.id));
-        await batch.commit();
-        toast({ description: `Đã xóa người dùng.` });
-      } catch (error) {
-        toast({ variant: 'destructive', title: 'Lỗi', description: `Không thể xóa.` });
-      }
+        batch.commit().then(() => toast({ description: `Đã xóa người dùng.` }));
     }
   };
 
-  const handleDeleteUsers = async (ids: string[]) => {
+  const handleDeleteUsers = (ids: string[]) => {
     if (!firestore) return;
     const filteredIds = ids.filter(id => id !== currentUser?.id);
-    try {
-      const batch = writeBatch(firestore);
-      filteredIds.forEach(id => {
-        batch.delete(doc(firestore, COLLECTIONS.USERS, id));
-      });
-      await batch.commit();
-      toast({ description: `Đã xóa ${filteredIds.length} người dùng.` });
-    } catch(error) {
-      toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể xóa hàng loạt.' });
-    }
+    const batch = writeBatch(firestore);
+    filteredIds.forEach(id => {
+      batch.delete(doc(firestore, COLLECTIONS.USERS, id));
+    });
+    batch.commit().then(() => toast({ description: `Đã xóa ${filteredIds.length} người dùng.` }));
   };
 
-  const handleDeleteClasses = async (ids: string[]) => {
+  const handleDeleteClasses = (ids: string[]) => {
     if (!firestore) return;
-    try {
-        const batch = writeBatch(firestore);
-        ids.forEach(id => {
-            batch.delete(doc(firestore, COLLECTIONS.CLASSES, id));
-        });
-        await batch.commit();
-        toast({ description: `Đã xóa lớp học.` });
-    } catch (error) {
-        toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể xóa lớp.' });
-    }
+    const batch = writeBatch(firestore);
+    ids.forEach(id => {
+        batch.delete(doc(firestore, COLLECTIONS.CLASSES, id));
+    });
+    batch.commit().then(() => toast({ description: `Đã xóa lớp học.` }));
   };
 
-  const handleDeleteAssignment = async (id: string) => {
+  const handleDeleteAssignment = (id: string) => {
     if (!firestore) return;
     if (window.confirm(`Xóa bài tập này?`)) {
-       try {
-        await deleteDoc(doc(firestore, COLLECTIONS.ASSIGNMENTS, id));
-        toast({ description: 'Đã xóa bài tập.'});
-      } catch (error) {
-        toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể xóa.'});
-      }
+        const docRef = doc(firestore, COLLECTIONS.ASSIGNMENTS, id);
+        deleteDocumentNonBlocking(docRef).then(() => toast({ description: 'Đã xóa bài tập.'}));
     }
   };
 
-  const handleUpdateSelf = async (updatedUser: User) => {
-    await saveData(COLLECTIONS.USERS, updatedUser.id, updatedUser);
+  const handleUpdateSelf = (updatedUser: User) => {
+    saveData(COLLECTIONS.USERS, updatedUser.id, updatedUser);
     const userForSession = { ...updatedUser };
     delete userForSession.password;
     setCurrentUser(userForSession);
@@ -290,13 +252,13 @@ const MainApp: React.FC = () => {
               <AdminDashboard
                 users={users}
                 classes={classes}
-                onAddUser={async (u) => await saveData(COLLECTIONS.USERS, u.id, u)}
-                onUpdateUser={async (u) => await saveData(COLLECTIONS.USERS, u.id, u)}
+                onAddUser={async (u) => saveData(COLLECTIONS.USERS, u.id, u)}
+                onUpdateUser={async (u) => saveData(COLLECTIONS.USERS, u.id, u)}
                 onDeleteUser={handleDeleteUser}
-                onDeleteUsers={handleDeleteUsers}
-                onAddClass={async (c) => await saveData(COLLECTIONS.CLASSES, c.id, c)}
-                onUpdateClass={async (c) => await saveData(COLLECTIONS.CLASSES, c.id, c)}
-                onDeleteClasses={handleDeleteClasses}
+                onDeleteUsers={async (ids) => handleDeleteUsers(ids)}
+                onAddClass={async (c) => saveData(COLLECTIONS.CLASSES, c.id, c)}
+                onUpdateClass={async (c) => saveData(COLLECTIONS.CLASSES, c.id, c)}
+                onDeleteClasses={async (ids) => handleDeleteClasses(ids)}
                 onExport={handleExportData}
                 onImport={handleImportData}
               />
@@ -317,7 +279,7 @@ const MainApp: React.FC = () => {
                   onCreateNew={() => navigate('CREATE_ASSIGNMENT')}
                   onViewReport={(a) => navigate('VIEW_REPORT', a)}
                   onEdit={(a) => navigate('EDIT_ASSIGNMENT', a)}
-                  onDelete={handleDeleteAssignment}
+                  onDelete={async (id) => handleDeleteAssignment(id)}
                   onViewRoster={() => navigate('CLASS_ROSTER')}
                   onUpdateUser={handleUpdateSelf}
                 />
@@ -330,7 +292,7 @@ const MainApp: React.FC = () => {
                   classes={classes}
                   assignmentToEdit={currentAssignment}
                   onSave={async (a) => {
-                    await saveData(COLLECTIONS.ASSIGNMENTS, a.id, a);
+                    saveData(COLLECTIONS.ASSIGNMENTS, a.id, a);
                     navigate('TEACHER_DASHBOARD');
                   }}
                   onCancel={() => navigate('TEACHER_DASHBOARD')}
@@ -342,7 +304,7 @@ const MainApp: React.FC = () => {
                   assignment={currentAssignment}
                   submissions={submissions.filter(s => s.assignmentId === currentAssignment.id)}
                   onBack={() => navigate('TEACHER_DASHBOARD')}
-                  onUpdateSubmission={async (updated) => await saveData(COLLECTIONS.SUBMISSIONS, updated.id, updated)}
+                  onUpdateSubmission={async (updated) => saveData(COLLECTIONS.SUBMISSIONS, updated.id, updated)}
                 />
               ) : null;
             case 'CLASS_ROSTER':
@@ -352,7 +314,7 @@ const MainApp: React.FC = () => {
                   classes={classes}
                   students={users.filter(u => u.role === UserRole.STUDENT && managedClasses.some(c => c.id === u.classId))}
                   onBack={() => navigate('TEACHER_DASHBOARD')}
-                  onDeleteStudents={handleDeleteUsers}
+                  onDeleteStudents={async (ids) => handleDeleteUsers(ids)}
                   onAddStudents={async (names) => {
                     if (managedClasses.length === 0) return;
                     const primaryClass = managedClasses[0];
@@ -366,7 +328,7 @@ const MainApp: React.FC = () => {
                         role: UserRole.STUDENT,
                         classId: primaryClass.id
                       };
-                      await saveData(COLLECTIONS.USERS, studentId, newStudent);
+                      saveData(COLLECTIONS.USERS, studentId, newStudent);
                     }
                   }}
                   onParseStudents={parseStudentListAI}
@@ -392,7 +354,7 @@ const MainApp: React.FC = () => {
                   studentId={currentUser.id}
                   studentName={currentUser.fullName}
                   onSubmit={async (s) => {
-                    await saveData(COLLECTIONS.SUBMISSIONS, s.id, s);
+                    saveData(COLLECTIONS.SUBMISSIONS, s.id, s);
                     navigate('STUDENT_PORTAL');
                   }}
                   onCancel={() => navigate('STUDENT_PORTAL')}
