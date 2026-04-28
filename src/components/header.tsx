@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { User } from '@/lib/types';
@@ -22,7 +23,9 @@ const Header: React.FC<HeaderProps> = ({ currentUser, onLogout, onLogoClick }) =
             <h1 className="text-xl font-bold text-foreground tracking-tight leading-none">EduSmart</h1>
             <div className="flex items-center gap-1.5 mt-1">
               <span className="w-1.5 h-1.5 bg-accent rounded-full animate-pulse"></span>
-              <span className="text-[10px] font-black text-accent uppercase tracking-widest">HỆ THỐNG GIÁO DỤC THÔNG MINH</span>
+              <span className="text-[10px] font-black text-accent uppercase tracking-widest">
+                Hệ thống giao bài tập thông minh Trường PTDTBT THCS Ma Thì Hồ
+              </span>
             </div>
           </div>
         </div>
