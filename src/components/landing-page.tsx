@@ -20,6 +20,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
         <h2 className="text-3xl md:text-5xl font-black tracking-tighter leading-none">
           <span className="block text-foreground uppercase">HỆ THỐNG</span>
           <span className="block text-primary uppercase">GIÁO DỤC THÔNG MINH</span>
+          <span className="block text-sm md:text-base text-muted-foreground mt-2 font-bold uppercase tracking-wider">
+            Trường PTDTBT THCS Ma Thì Hồ
+          </span>
         </h2>
         <div className="h-1 w-20 bg-accent mx-auto rounded-full"></div>
       </div>
