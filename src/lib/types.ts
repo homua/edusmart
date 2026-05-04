@@ -66,4 +66,5 @@ export type View =
   | 'VIEW_REPORT'
   | 'CLASS_ROSTER'
   | 'STUDENT_PORTAL'
-  | 'DO_ASSIGNMENT';
+  | 'DO_ASSIGNMENT'
+  | 'VIEW_SUBMISSION';

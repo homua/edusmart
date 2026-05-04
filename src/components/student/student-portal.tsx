@@ -1,16 +1,18 @@
+
 "use client";
 
 import type { User, Assignment, Submission } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { PlayCircle, CheckCircle, FileText } from 'lucide-react';
+import { PlayCircle, CheckCircle, FileText, Search } from 'lucide-react';
 
 interface StudentPortalProps {
   currentUser: User;
   assignments: Assignment[];
   submissions: Submission[];
   onStart: (assignment: Assignment) => void;
+  onReview: (assignment: Assignment, submission: Submission) => void;
 }
 
 const StudentPortal: React.FC<StudentPortalProps> = ({
@@ -18,14 +20,15 @@ const StudentPortal: React.FC<StudentPortalProps> = ({
   assignments,
   submissions,
   onStart,
+  onReview,
 }) => {
 
   const getSubmissionStatus = (assignmentId: string) => {
     const submission = submissions.find(s => s.assignmentId === assignmentId);
     if (submission) {
-      return { submitted: true, score: submission.score };
+      return { submitted: true, submission };
     }
-    return { submitted: false, score: null };
+    return { submitted: false, submission: null };
   };
 
   return (
@@ -37,7 +40,7 @@ const StudentPortal: React.FC<StudentPortalProps> = ({
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {assignments.length > 0 ? assignments.map(assignment => {
-          const { submitted, score } = getSubmissionStatus(assignment.id);
+          const { submitted, submission } = getSubmissionStatus(assignment.id);
           const totalPoints = assignment.questions.reduce((sum, q) => sum + q.points, 0);
 
           return (
@@ -54,7 +57,7 @@ const StudentPortal: React.FC<StudentPortalProps> = ({
                  {submitted ? (
                   <div className='p-4 rounded-xl bg-accent/20 text-accent-foreground'>
                     <div className="flex items-center gap-2 font-bold"><CheckCircle /> Đã nộp bài</div>
-                    <p className="mt-2 text-sm">Điểm số của bạn: <span className="font-black text-xl">{score} / {totalPoints}</span></p>
+                    <p className="mt-2 text-sm">Điểm số của bạn: <span className="font-black text-xl">{submission?.score} / {totalPoints}</span></p>
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">Bạn chưa nộp bài tập này.</p>
@@ -64,7 +67,11 @@ const StudentPortal: React.FC<StudentPortalProps> = ({
                  <Badge variant={submitted ? "default" : "secondary"} className={submitted ? "bg-accent text-accent-foreground" : ""}>
                   {submitted ? 'Đã hoàn thành' : 'Chưa làm'}
                 </Badge>
-                {!submitted && (
+                {submitted ? (
+                   <Button onClick={() => onReview(assignment, submission!)} variant="outline" className="rounded-full">
+                    <Search className="mr-2 w-4 h-4" /> Xem lại
+                  </Button>
+                ) : (
                   <Button onClick={() => onStart(assignment)} className="rounded-full">
                     <PlayCircle className="mr-2" /> Làm bài
                   </Button>

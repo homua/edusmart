@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -24,6 +25,7 @@ import ReportView from '@/components/teacher/report-view';
 import ClassRoster from '@/components/teacher/class-roster';
 import StudentPortal from '@/components/student/student-portal';
 import AssignmentRunner from '@/components/student/assignment-runner';
+import SubmissionReview from '@/components/student/submission-review';
 
 const MainApp: React.FC = () => {
   const { firestore, auth } = useFirebase();
@@ -52,6 +54,7 @@ const MainApp: React.FC = () => {
 
   const [view, setView] = useState<View>('HOME');
   const [currentAssignment, setCurrentAssignment] = useState<Assignment | null>(null);
+  const [currentSubmission, setCurrentSubmission] = useState<Submission | null>(null);
   
   const isLoading = usersLoading || classesLoading || assignmentsLoading || submissionsLoading || isAuthUserLoading;
 
@@ -123,8 +126,14 @@ const MainApp: React.FC = () => {
   
   const navigate = (newView: View, data?: any) => {
     if (newView === 'AUTH' && currentUser) return;
-    if (newView === 'CREATE_ASSIGNMENT') setCurrentAssignment(null);
-    else if (data) setCurrentAssignment(data);
+    if (newView === 'CREATE_ASSIGNMENT') {
+      setCurrentAssignment(null);
+    } else if (newView === 'VIEW_SUBMISSION' && data) {
+      setCurrentAssignment(data.assignment);
+      setCurrentSubmission(data.submission);
+    } else if (data) {
+      setCurrentAssignment(data);
+    }
     setView(newView);
   }
 
@@ -342,9 +351,10 @@ const MainApp: React.FC = () => {
               return (
                 <StudentPortal
                   assignments={assignments.filter(a => a.classIds.includes(currentUser.classId || ''))}
-                  submissions={submissions.filter(s => s.assignmentId === currentUser.id)}
+                  submissions={submissions.filter(s => s.studentId === currentUser.id)}
                   currentUser={currentUser}
                   onStart={(a) => navigate('DO_ASSIGNMENT', a)}
+                  onReview={(assignment, submission) => navigate('VIEW_SUBMISSION', { assignment, submission })}
                 />
               );
             case 'DO_ASSIGNMENT':
@@ -358,6 +368,14 @@ const MainApp: React.FC = () => {
                     navigate('STUDENT_PORTAL');
                   }}
                   onCancel={() => navigate('STUDENT_PORTAL')}
+                />
+              ) : null;
+            case 'VIEW_SUBMISSION':
+              return currentAssignment && currentSubmission ? (
+                <SubmissionReview
+                  assignment={currentAssignment}
+                  submission={currentSubmission}
+                  onBack={() => navigate('STUDENT_PORTAL')}
                 />
               ) : null;
           }
