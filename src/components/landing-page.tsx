@@ -19,7 +19,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
       <div className="space-y-2 mb-8">
         <h2 className="text-3xl md:text-5xl font-black tracking-tighter leading-none">
           <span className="block text-foreground uppercase">Ứng dụng</span>
-          <span className="block text-primary uppercase">A.I GIAO BÀI TẬP THÔNG MINH</span>
+          <span className="block text-primary uppercase">AI GIAO BÀI TẬP THÔNG MINH</span>
           <span className="block text-sm md:text-base text-muted-foreground mt-2 font-bold uppercase tracking-wider">
             Trường PTDTBT THCS Ma Thì Hồ
           </span>

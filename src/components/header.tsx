@@ -24,7 +24,7 @@ const Header: React.FC<HeaderProps> = ({ currentUser, onLogout, onLogoClick }) =
             <div className="flex items-center gap-1.5 mt-1">
               <span className="w-1.5 h-1.5 bg-accent rounded-full animate-pulse"></span>
               <span className="text-[10px] font-black text-accent uppercase tracking-widest">
-                Ứng dụng A.I giao bài tập thông minh
+                Ứng dụng AI giao bài tập thông minh
               </span>
             </div>
           </div>
