@@ -42,7 +42,6 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   onUpdateUser,
 }) => {
   const { toast } = useToast();
-  // Find managed classes where current user is one of the teachers
   const managedClasses = classes.filter(c => c.teacherIds?.includes(currentUser.id));
   const classNamesText = managedClasses.map(c => c.name).join(', ');
 
