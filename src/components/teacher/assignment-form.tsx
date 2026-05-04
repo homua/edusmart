@@ -72,11 +72,22 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
     setQuestions(questions.filter((_, i) => i !== index));
   };
   
+  const validateAndGetIsoDate = (dateStr: string) => {
+    if (!dateStr) return undefined;
+    const date = new Date(dateStr);
+    // isNaN(date.getTime()) checks if the date is invalid
+    return isNaN(date.getTime()) ? undefined : date.toISOString();
+  };
+
   const handleSave = async () => {
     if (!title || !subject || classIds.length === 0 || questions.length === 0) {
       toast({ variant: 'destructive', description: 'Vui lòng điền nội dung bài tập, môn học, chọn lớp và thêm ít nhất một câu hỏi.' });
       return;
     }
+    
+    const formattedStartDate = validateAndGetIsoDate(startDate);
+    const formattedEndDate = validateAndGetIsoDate(endDate);
+
     const assignmentData: Assignment = {
       id: assignmentToEdit ? assignmentToEdit.id : `asg_${Date.now()}`,
       title,
@@ -85,11 +96,16 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
       classIds,
       questions,
       createdAt: assignmentToEdit ? assignmentToEdit.createdAt : new Date().toISOString(),
-      startDate: startDate ? new Date(startDate).toISOString() : undefined,
-      endDate: endDate ? new Date(endDate).toISOString() : undefined,
+      startDate: formattedStartDate,
+      endDate: formattedEndDate,
     };
-    await onSave(assignmentData);
-    toast({ title: "Thành công!", description: assignmentToEdit ? "Đã cập nhật bài tập." : "Đã tạo bài tập mới." });
+    
+    try {
+      await onSave(assignmentData);
+      toast({ title: "Thành công!", description: assignmentToEdit ? "Đã cập nhật bài tập." : "Đã tạo bài tập mới." });
+    } catch (error) {
+      // Errors are handled by the non-blocking infrastructure, but we stop loading here if needed
+    }
   };
   
   const handleGenerateQuestions = async () => {
