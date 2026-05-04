@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Trash2, ArrowLeft, ChevronDown, Bot, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, ChevronDown, Bot, AlertCircle, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { generateQuestionsAI, type GenerateQuestionsInput } from '@/ai/flows/generate-questions-flow';
@@ -29,6 +29,8 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
   const [subject, setSubject] = useState('');
   const [classIds, setClassIds] = useState<string[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   // AI Generation State
   const [isAiModalOpen, setAiModalOpen] = useState(false);
@@ -43,6 +45,8 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
       setSubject(assignmentToEdit.subject);
       setClassIds(assignmentToEdit.classIds);
       setQuestions(assignmentToEdit.questions);
+      setStartDate(assignmentToEdit.startDate ? assignmentToEdit.startDate.slice(0, 16) : '');
+      setEndDate(assignmentToEdit.endDate ? assignmentToEdit.endDate.slice(0, 16) : '');
     }
   }, [assignmentToEdit]);
 
@@ -81,6 +85,8 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
       classIds,
       questions,
       createdAt: assignmentToEdit ? assignmentToEdit.createdAt : new Date().toISOString(),
+      startDate: startDate ? new Date(startDate).toISOString() : undefined,
+      endDate: endDate ? new Date(endDate).toISOString() : undefined,
     };
     await onSave(assignmentData);
     toast({ title: "Thành công!", description: assignmentToEdit ? "Đã cập nhật bài tập." : "Đã tạo bài tập mới." });
@@ -125,7 +131,7 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
   const pointOptions = [0.25, 0.5, 1, 2, 3, 4, 5];
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto animate-in fade-in duration-500">
+    <div className="space-y-8 max-w-4xl mx-auto animate-in fade-in duration-500 pb-20">
       <div className="flex items-center gap-4">
         <Button onClick={onCancel} variant="outline" size="icon" className="h-12 w-12 rounded-full"><ArrowLeft /></Button>
         <div>
@@ -140,53 +146,79 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
             <Label htmlFor="title" className="text-lg font-bold">Nội dung bài tập</Label>
             <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ví dụ: Phân tích nhân vật Dế Mèn trong tác phẩm Dế Mèn phiêu lưu ký" className="py-6 text-lg rounded-xl"/>
           </div>
-           <div className="space-y-2">
-            <Label htmlFor="subject" className="text-lg font-bold">Môn học</Label>
-            <Select value={subject} onValueChange={setSubject}>
-                <SelectTrigger id="subject" className="py-6 text-lg rounded-xl">
-                    <SelectValue placeholder="Chọn môn học" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="Toán">Toán</SelectItem>
-                    <SelectItem value="Văn">Văn</SelectItem>
-                    <SelectItem value="Tiếng Anh">Tiếng Anh</SelectItem>
-                    <SelectItem value="Khoa học Tự nhiên">Khoa học Tự nhiên</SelectItem>
-                    <SelectItem value="Lịch sử và Địa lí">Lịch sử và Địa lí</SelectItem>
-                    <SelectItem value="Giáo dục công dân">Giáo dục công dân</SelectItem>
-                    <SelectItem value="Công nghệ">Công nghệ</SelectItem>
-                    <SelectItem value="Tin học">Tin học</SelectItem>
-                    <SelectItem value="Âm nhạc">Âm nhạc</SelectItem>
-                </SelectContent>
-            </Select>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="subject" className="text-lg font-bold">Môn học</Label>
+              <Select value={subject} onValueChange={setSubject}>
+                  <SelectTrigger id="subject" className="py-6 text-lg rounded-xl">
+                      <SelectValue placeholder="Chọn môn học" />
+                  </SelectTrigger>
+                  <SelectContent>
+                      <SelectItem value="Toán">Toán</SelectItem>
+                      <SelectItem value="Văn">Văn</SelectItem>
+                      <SelectItem value="Tiếng Anh">Tiếng Anh</SelectItem>
+                      <SelectItem value="Khoa học Tự nhiên">Khoa học Tự nhiên</SelectItem>
+                      <SelectItem value="Lịch sử và Địa lí">Lịch sử và Địa lí</SelectItem>
+                      <SelectItem value="Giáo dục công dân">Giáo dục công dân</SelectItem>
+                      <SelectItem value="Công nghệ">Công nghệ</SelectItem>
+                      <SelectItem value="Tin học">Tin học</SelectItem>
+                      <SelectItem value="Âm nhạc">Âm nhạc</SelectItem>
+                  </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="classes" className="text-lg font-bold">Giao cho lớp</Label>
+              <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                      <Button id="classes" variant="outline" className="py-6 text-lg rounded-xl w-full justify-between font-normal text-left">
+                          <span className="truncate">{selectedClassesText}</span>
+                          <ChevronDown className="h-4 w-4 opacity-50" />
+                      </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)] max-h-[300px] overflow-y-auto">
+                      {classes.map(c => (
+                          <DropdownMenuCheckboxItem
+                              key={c.id}
+                              checked={classIds.includes(c.id)}
+                              onCheckedChange={checked => {
+                                  setClassIds(currentIds => 
+                                      checked 
+                                      ? [...currentIds, c.id]
+                                      : currentIds.filter(id => id !== c.id)
+                                  )
+                              }}
+                              onSelect={e => e.preventDefault()}
+                          >
+                              {c.name}
+                          </DropdownMenuCheckboxItem>
+                      ))}
+                  </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="classes" className="text-lg font-bold">Giao cho lớp</Label>
-             <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button id="classes" variant="outline" className="py-6 text-lg rounded-xl w-full justify-between font-normal text-left">
-                         <span className="truncate">{selectedClassesText}</span>
-                         <ChevronDown className="h-4 w-4 opacity-50" />
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)] max-h-[300px] overflow-y-auto">
-                    {classes.map(c => (
-                        <DropdownMenuCheckboxItem
-                            key={c.id}
-                            checked={classIds.includes(c.id)}
-                            onCheckedChange={checked => {
-                                setClassIds(currentIds => 
-                                    checked 
-                                    ? [...currentIds, c.id]
-                                    : currentIds.filter(id => id !== c.id)
-                                )
-                            }}
-                            onSelect={e => e.preventDefault()}
-                        >
-                            {c.name}
-                        </DropdownMenuCheckboxItem>
-                    ))}
-                </DropdownMenuContent>
-             </DropdownMenu>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-muted/20 rounded-3xl border border-border/50">
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2 font-bold"><Calendar className="w-4 h-4 text-primary"/> Thời gian bắt đầu</Label>
+              <Input 
+                type="datetime-local" 
+                value={startDate} 
+                onChange={e => setStartDate(e.target.value)} 
+                className="rounded-xl"
+              />
+              <p className="text-[10px] text-muted-foreground italic">Để trống nếu muốn bắt đầu ngay lập tức</p>
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2 font-bold"><Calendar className="w-4 h-4 text-destructive"/> Thời gian kết thúc</Label>
+              <Input 
+                type="datetime-local" 
+                value={endDate} 
+                onChange={e => setEndDate(e.target.value)} 
+                className="rounded-xl"
+              />
+              <p className="text-[10px] text-muted-foreground italic">Để trống nếu không giới hạn thời gian</p>
+            </div>
           </div>
         </CardContent>
       </Card>

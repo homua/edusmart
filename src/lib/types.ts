@@ -42,6 +42,8 @@ export interface Assignment {
   classIds: string[];
   questions: Question[];
   createdAt: string; // ISO date string
+  startDate?: string; // ISO date string
+  endDate?: string;   // ISO date string
 }
 
 export interface Submission {

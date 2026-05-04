@@ -6,7 +6,7 @@ import type { User, Class, Assignment, Submission } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Users, Trash2, FileText, PieChart, Pencil, KeyRound } from 'lucide-react';
+import { Plus, Users, Trash2, FileText, PieChart, Pencil, KeyRound, Clock, Calendar } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -147,42 +147,69 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
           const isCompleted = assignmentSubmissions.length >= targetStudentsCount && targetStudentsCount > 0;
           
           return (
-            <Card key={assignment.id} className="rounded-3xl shadow-lg shadow-primary/5 flex flex-col">
+            <Card key={assignment.id} className="rounded-3xl shadow-lg shadow-primary/5 flex flex-col border-primary/10 hover:border-primary/30 transition-all group">
               <CardHeader>
-                <CardTitle className="leading-tight">{assignment.title}</CardTitle>
-                <CardDescription>
-                  <span className="font-semibold text-primary">{assignment.subject}</span>
-                  <span className="mx-2 text-muted-foreground/50">|</span>
-                  <span>{format(parseISO(assignment.createdAt), "d 'tháng' M, yyyy", { locale: vi })}</span>
+                <div className="flex justify-between items-start mb-2">
+                  <Badge className="bg-primary/10 text-primary border-none text-[10px] uppercase font-black px-2">{assignment.subject}</Badge>
+                  <Badge variant={isCompleted ? "default" : "secondary"} className={`${isCompleted ? "bg-accent text-accent-foreground" : ""} text-[10px] uppercase font-black`}>
+                    {isCompleted ? 'Hoàn thành' : 'Đang giao'}
+                  </Badge>
+                </div>
+                <CardTitle className="leading-tight text-xl group-hover:text-primary transition-colors">{assignment.title}</CardTitle>
+                <CardDescription className="flex items-center gap-1.5 mt-1 font-medium">
+                   <Calendar className="w-3.5 h-3.5" />
+                   {format(parseISO(assignment.createdAt), "d 'tháng' M, yyyy", { locale: vi })}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="flex-grow space-y-2">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <FileText className="w-4 h-4"/>
-                    <span>{assignment.questions.length} câu hỏi</span>
+              <CardContent className="flex-grow space-y-3">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1 p-3 bg-muted/40 rounded-2xl">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-bold uppercase tracking-tighter">
+                      <FileText className="w-3.5 h-3.5"/> Câu hỏi
+                    </div>
+                    <span className="text-lg font-black text-foreground">{assignment.questions.length}</span>
+                  </div>
+                  <div className="flex flex-col gap-1 p-3 bg-muted/40 rounded-2xl">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-bold uppercase tracking-tighter">
+                      <Users className="w-3.5 h-3.5"/> Đã nộp
+                    </div>
+                    <span className="text-lg font-black text-foreground">{assignmentSubmissions.length} / {targetStudentsCount}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Users className="w-4 h-4"/>
-                    <span>{assignmentSubmissions.length} / {targetStudentsCount} đã nộp</span>
+
+                <div className="p-3 bg-primary/5 rounded-2xl border border-primary/10 space-y-1">
+                  <div className="flex items-center gap-1.5 text-[10px] text-primary font-black uppercase tracking-widest">
+                    <Clock className="w-3 h-3" /> Thời gian hiệu lực
+                  </div>
+                  <div className="text-[11px] font-bold text-foreground">
+                    {assignment.startDate ? format(parseISO(assignment.startDate), "HH:mm dd/MM", { locale: vi }) : "Ngay bây giờ"} 
+                    <span className="mx-1 text-muted-foreground">→</span>
+                    {assignment.endDate ? format(parseISO(assignment.endDate), "HH:mm dd/MM", { locale: vi }) : "Không giới hạn"}
+                  </div>
                 </div>
               </CardContent>
-              <CardFooter className="flex justify-between items-center">
-                 <Badge variant={isCompleted ? "default" : "secondary"} className={isCompleted ? "bg-accent text-accent-foreground" : ""}>
-                  {isCompleted ? 'Hoàn thành' : 'Đang giao'}
-                </Badge>
+              <CardFooter className="bg-muted/30 p-4 flex justify-between items-center rounded-b-3xl">
                 <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" className="rounded-full" onClick={() => onEdit(assignment)}><Pencil className="w-4 h-4" /></Button>
-                  <Button variant="ghost" size="icon" className="rounded-full" onClick={() => onViewReport(assignment)}><PieChart className="w-4 h-4" /></Button>
-                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive rounded-full" onClick={() => onDelete(assignment.id)}><Trash2 className="w-4 h-4" /></Button>
+                  <Button variant="ghost" size="icon" className="rounded-xl hover:bg-primary/10 hover:text-primary" onClick={() => onEdit(assignment)} title="Chỉnh sửa">
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="rounded-xl hover:bg-primary/10 hover:text-primary" onClick={() => onViewReport(assignment)} title="Báo cáo chi tiết">
+                    <PieChart className="w-4 h-4" />
+                  </Button>
                 </div>
+                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl" onClick={() => onDelete(assignment.id)} title="Xóa bài tập">
+                  <Trash2 className="w-4 h-4" />
+                </Button>
               </CardFooter>
             </Card>
           )
         }) : (
-          <div className="md:col-span-2 lg:col-span-3 text-center py-20 bg-muted/50 rounded-3xl">
+          <div className="md:col-span-2 lg:col-span-3 text-center py-24 bg-muted/30 rounded-3xl border-2 border-dashed border-muted-foreground/20">
             <h3 className="text-xl font-bold text-muted-foreground">Chưa có bài tập nào</h3>
-            <p className="text-muted-foreground mb-4">Nhấn "Tạo bài tập mới" để bắt đầu.</p>
-            <Button onClick={onCreateNew} className="rounded-xl"><Plus className="mr-2 h-4 w-4"/>Tạo bài tập mới</Button>
+            <p className="text-muted-foreground mb-6">Hãy bắt đầu bằng cách tạo một bài tập mới cho học sinh.</p>
+            <Button onClick={onCreateNew} className="rounded-2xl px-8 py-6 font-bold shadow-lg shadow-primary/20">
+              <Plus className="mr-2 h-5 w-5"/> Tạo ngay bài tập đầu tiên
+            </Button>
           </div>
         )}
       </div>
