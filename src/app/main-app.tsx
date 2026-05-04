@@ -70,10 +70,10 @@ const MainApp: React.FC = () => {
     }
   }, [auth]);
   
-  const saveData = useCallback((collectionName: string, id: string, data: any) => {
+  const saveData = useCallback(async (collectionName: string, id: string, data: any) => {
     if (!firestore) return;
     const docRef = doc(firestore, collectionName, id);
-    setDocumentNonBlocking(docRef, data, { merge: true });
+    return setDocumentNonBlocking(docRef, data, { merge: true });
   }, [firestore]);
 
   // Initial Admin creation - only if needed and not already creating
@@ -301,7 +301,7 @@ const MainApp: React.FC = () => {
                   classes={classes}
                   assignmentToEdit={currentAssignment}
                   onSave={async (a) => {
-                    saveData(COLLECTIONS.ASSIGNMENTS, a.id, a);
+                    await saveData(COLLECTIONS.ASSIGNMENTS, a.id, a);
                     navigate('TEACHER_DASHBOARD');
                   }}
                   onCancel={() => navigate('TEACHER_DASHBOARD')}
@@ -364,7 +364,7 @@ const MainApp: React.FC = () => {
                   studentId={currentUser.id}
                   studentName={currentUser.fullName}
                   onSubmit={async (s) => {
-                    saveData(COLLECTIONS.SUBMISSIONS, s.id, s);
+                    await saveData(COLLECTIONS.SUBMISSIONS, s.id, s);
                     navigate('STUDENT_PORTAL');
                   }}
                   onCancel={() => navigate('STUDENT_PORTAL')}
@@ -388,7 +388,7 @@ const MainApp: React.FC = () => {
   if (!isClient || (isInitialLoad && isLoading)) return <LoadingScreen />;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background text-foreground">
       <Header
         currentUser={currentUser}
         onLogout={handleLogout}

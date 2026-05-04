@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -8,7 +9,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface AssignmentRunnerProps {
@@ -29,6 +30,7 @@ const AssignmentRunner: React.FC<AssignmentRunnerProps> = ({
   const { toast } = useToast();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const totalQuestions = assignment.questions.length;
   const currentQuestion = assignment.questions[currentQuestionIndex];
@@ -49,64 +51,91 @@ const AssignmentRunner: React.FC<AssignmentRunnerProps> = ({
     }
   };
 
-  const handleSubmit = () => {
-    if(Object.keys(answers).length !== totalQuestions){
-        if(!window.confirm("Bạn chưa trả lời hết câu hỏi. Bạn có chắc muốn nộp bài không?")) {
-            return;
-        }
-    }
-    
-    let score = 0;
-    const submissionAnswers = assignment.questions.map(q => {
-      const studentAnswer = answers[q.id] || '';
-      if (studentAnswer.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase()) {
-        score += q.points;
+  const handleSubmit = async () => {
+    if (isSubmitting) return;
+
+    if (Object.keys(answers).length < totalQuestions) {
+      if (!window.confirm("Bạn chưa trả lời hết các câu hỏi. Bạn có chắc chắn muốn nộp bài không?")) {
+        return;
       }
-      return { questionId: q.id, answer: studentAnswer };
-    });
+    }
 
-    const newSubmission: Submission = {
-      id: `sub_${assignment.id}_${studentId}`,
-      assignmentId: assignment.id,
-      studentId,
-      studentName,
-      answers: submissionAnswers,
-      score,
-      isGraded: true, // Auto-graded
-      submittedAt: new Date().toISOString(),
-    };
+    setIsSubmitting(true);
+    
+    try {
+      let score = 0;
+      const submissionAnswers = assignment.questions.map(q => {
+        const studentAnswer = answers[q.id] || '';
+        // Basic grading for multiple choice
+        if (q.type === 'MULTIPLE_CHOICE') {
+          if (studentAnswer.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase()) {
+            score += q.points;
+          }
+        } else {
+          // For text, we can't auto-grade perfectly, but we'll assign points if it's not empty for now
+          // or rely on exact match if available. MVP logic: exact match.
+          if (studentAnswer.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase()) {
+            score += q.points;
+          }
+        }
+        return { questionId: q.id, answer: studentAnswer };
+      });
 
-    onSubmit(newSubmission);
-    toast({ title: 'Nộp bài thành công!', description: `Điểm của bạn là ${score}.` });
+      const submissionId = `sub_${assignment.id}_${studentId}`;
+      const newSubmission: Submission = {
+        id: submissionId,
+        assignmentId: assignment.id,
+        studentId,
+        studentName,
+        answers: submissionAnswers,
+        score: parseFloat(score.toFixed(2)),
+        isGraded: true,
+        submittedAt: new Date().toISOString(),
+      };
+
+      await onSubmit(newSubmission);
+      
+      toast({ 
+        title: 'Nộp bài thành công!', 
+        description: `Bạn đã hoàn thành bài tập. Điểm số: ${newSubmission.score}` 
+      });
+    } catch (error) {
+      // Error is already emitted by non-blocking-updates, but we need to reset state
+      setIsSubmitting(false);
+    }
   };
   
   const progress = ((currentQuestionIndex + 1) / totalQuestions) * 100;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in duration-500">
+    <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in duration-500 pb-20">
       <div className="text-center">
         <h1 className="text-3xl font-black text-foreground">{assignment.title}</h1>
-        <p className="text-muted-foreground">Câu {currentQuestionIndex + 1} / {totalQuestions}</p>
+        <p className="text-muted-foreground font-medium uppercase tracking-widest text-xs mt-2">
+          Môn: {assignment.subject} • Câu {currentQuestionIndex + 1} / {totalQuestions}
+        </p>
       </div>
 
-      <Progress value={progress} />
+      <Progress value={progress} className="h-3" />
 
-      <Card className="rounded-3xl shadow-lg shadow-primary/5 min-h-[300px]">
+      <Card className="rounded-3xl shadow-lg shadow-primary/5 min-h-[350px] border-primary/10">
         <CardHeader>
-          <CardTitle className="text-xl">{currentQuestion.text}</CardTitle>
-          <CardDescription>{currentQuestion.points} điểm</CardDescription>
+          <div className="flex justify-between items-start">
+            <CardTitle className="text-xl leading-relaxed">{currentQuestion.text}</CardTitle>
+            <Badge variant="secondary" className="ml-4 whitespace-nowrap">{currentQuestion.points} điểm</Badge>
+          </div>
         </CardHeader>
         <CardContent>
           {currentQuestion.type === 'MULTIPLE_CHOICE' ? (
             <RadioGroup
               value={answers[currentQuestion.id]}
               onValueChange={(val) => handleAnswerChange(currentQuestion.id, val)}
-              className="space-y-2"
+              className="grid gap-3"
             >
               {currentQuestion.options?.map((opt, i) => (
-                <div key={i} className="flex items-center space-x-2 p-4 rounded-lg border has-[:checked]:bg-primary/10 has-[:checked]:border-primary transition-colors">
+                <div key={i} className="flex items-center space-x-2 p-4 rounded-2xl border-2 border-muted hover:border-primary/30 has-[:checked]:bg-primary/5 has-[:checked]:border-primary transition-all cursor-pointer">
                   <RadioGroupItem value={opt} id={`q${currentQuestion.id}-opt${i}`} />
-                  <Label htmlFor={`q${currentQuestion.id}-opt${i}`} className="text-base flex-grow cursor-pointer">{opt}</Label>
+                  <Label htmlFor={`q${currentQuestion.id}-opt${i}`} className="text-base flex-grow cursor-pointer font-medium">{opt}</Label>
                 </div>
               ))}
             </RadioGroup>
@@ -114,26 +143,43 @@ const AssignmentRunner: React.FC<AssignmentRunnerProps> = ({
             <Textarea
               value={answers[currentQuestion.id] || ''}
               onChange={(e) => handleAnswerChange(currentQuestion.id, e.target.value)}
-              placeholder="Nhập câu trả lời của bạn..."
-              className="min-h-[150px] rounded-xl text-lg"
+              placeholder="Nhập câu trả lời của bạn tại đây..."
+              className="min-h-[180px] rounded-2xl text-lg p-6 bg-muted/30 border-2 focus:border-primary transition-all"
             />
           )}
         </CardContent>
       </Card>
 
-      <div className="flex justify-between items-center">
-        <Button onClick={onCancel} variant="ghost" className="rounded-full">Thoát</Button>
+      <div className="flex justify-between items-center bg-background/80 backdrop-blur-sm p-4 rounded-3xl border border-primary/10 shadow-lg">
+        <Button onClick={onCancel} variant="ghost" className="rounded-full px-6" disabled={isSubmitting}>
+          Thoát
+        </Button>
         <div className="flex gap-2">
-          <Button onClick={handlePrev} variant="outline" disabled={currentQuestionIndex === 0} className="rounded-full">
-            <ArrowLeft className="mr-2" /> Câu trước
+          <Button onClick={handlePrev} variant="outline" disabled={currentQuestionIndex === 0 || isSubmitting} className="rounded-full px-6">
+            <ArrowLeft className="mr-2 h-4 w-4" /> Câu trước
           </Button>
+          
           {currentQuestionIndex < totalQuestions - 1 ? (
-            <Button onClick={handleNext} className="rounded-full">
-              Câu sau <ArrowRight className="ml-2" />
+            <Button onClick={handleNext} className="rounded-full px-8 font-bold" disabled={isSubmitting}>
+              Câu sau <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           ) : (
-            <Button onClick={handleSubmit} className="bg-accent text-accent-foreground hover:bg-accent/90 rounded-full">
-              <Check className="mr-2" /> Nộp bài
+            <Button 
+              onClick={handleSubmit} 
+              className="bg-accent text-accent-foreground hover:bg-accent/90 rounded-full px-10 font-black shadow-lg shadow-accent/20"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Đang nộp...
+                </>
+              ) : (
+                <>
+                  <Check className="mr-2 h-5 w-5" />
+                  Nộp bài
+                </>
+              )}
             </Button>
           )}
         </div>
