@@ -6,8 +6,8 @@ import type { User, Class, Assignment, Submission } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Users, Trash2, FileText, PieChart, Pencil, KeyRound, Clock, Calendar } from 'lucide-react';
-import { format, parseISO, isAfter } from 'date-fns';
+import { Plus, Users, Trash2, FileText, PieChart, Pencil, KeyRound, Clock, Calendar, CheckCircle, AlertCircle } from 'lucide-react';
+import { format, parseISO, isAfter, isBefore } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -79,6 +79,20 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
     }
   };
 
+  const getTimeStatus = (assignment: Assignment) => {
+    const now = new Date();
+    const start = assignment.startDate ? parseISO(assignment.startDate) : null;
+    const end = assignment.endDate ? parseISO(assignment.endDate) : null;
+
+    if (start && isBefore(now, start)) {
+      return { status: 'NOT_STARTED', message: `Bắt đầu: ${format(start, "HH:mm, dd/MM", { locale: vi })}` };
+    }
+    if (end && isAfter(now, end)) {
+      return { status: 'EXPIRED', message: `Đã hết hạn: ${format(end, "HH:mm, dd/MM", { locale: vi })}` };
+    }
+    return { status: 'ACTIVE', message: end ? `Hết hạn: ${format(end, "HH:mm, dd/MM", { locale: vi })}` : 'Không giới hạn thời gian' };
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -144,66 +158,55 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
           const assignmentSubmissions = submissions.filter(s => s.assignmentId === assignment.id);
           const targetStudentsCount = students.filter(s => assignment.classIds.includes(s.classId || '')).length;
           const isCompleted = assignmentSubmissions.length >= targetStudentsCount && targetStudentsCount > 0;
-          
-          const now = new Date();
-          const isExpired = assignment.endDate ? isAfter(now, parseISO(assignment.endDate)) : false;
-
-          let statusLabel = 'Đang giao';
-          let badgeVariant: "default" | "secondary" | "destructive" | "outline" = "secondary";
-          let badgeClass = "";
-
-          if (isExpired) {
-            statusLabel = 'Đã kết thúc';
-            badgeVariant = "destructive";
-          } else if (isCompleted) {
-            statusLabel = 'Hoàn thành';
-            badgeVariant = "default";
-            badgeClass = "bg-accent text-accent-foreground";
-          }
+          const { status, message } = getTimeStatus(assignment);
 
           return (
-            <Card key={assignment.id} className="rounded-3xl shadow-lg shadow-primary/5 flex flex-col border-primary/10 hover:border-primary/30 transition-all group">
+            <Card key={assignment.id} className="rounded-3xl shadow-lg shadow-primary/5 flex flex-col overflow-hidden border-primary/10 hover:border-primary/30 transition-all group">
               <CardHeader>
-                <div className="flex justify-between items-start mb-2">
-                  <Badge className="bg-primary/10 text-primary border-none text-[10px] uppercase font-black px-2">{assignment.subject}</Badge>
-                  <Badge variant={badgeVariant} className={`${badgeClass} text-[10px] uppercase font-black`}>
-                    {statusLabel}
+                <div className="flex justify-between items-start gap-2 mb-1">
+                  <Badge variant="outline" className="text-[10px] uppercase tracking-tighter font-black">
+                    {assignment.subject}
                   </Badge>
+                  {isCompleted ? (
+                    <Badge className="bg-accent text-accent-foreground text-[10px] uppercase font-black">Hoàn thành</Badge>
+                  ) : status === 'NOT_STARTED' ? (
+                    <Badge variant="secondary" className="text-[10px] uppercase font-black">Chưa đến giờ</Badge>
+                  ) : status === 'EXPIRED' ? (
+                    <Badge variant="destructive" className="text-[10px] uppercase font-black">Đã kết thúc</Badge>
+                  ) : (
+                    <Badge variant="default" className="text-[10px] uppercase font-black">Đang diễn ra</Badge>
+                  )}
                 </div>
-                <CardTitle className="leading-tight text-xl group-hover:text-primary transition-colors">{assignment.title}</CardTitle>
-                <CardDescription className="flex items-center gap-1.5 mt-1 font-medium">
-                   <Calendar className="w-3.5 h-3.5" />
-                   {format(parseISO(assignment.createdAt), "d 'tháng' M, yyyy", { locale: vi })}
+                <CardTitle className="text-xl group-hover:text-primary transition-colors">{assignment.title}</CardTitle>
+                <CardDescription className="flex items-center gap-4 mt-2">
+                  <div className="flex items-center gap-1 font-medium">
+                    <FileText className="w-3.5 h-3.5 text-primary" /> {assignment.questions.length} câu
+                  </div>
+                  <div className="flex items-center gap-1 font-medium">
+                    <Clock className="w-3.5 h-3.5 text-primary" /> {message}
+                  </div>
                 </CardDescription>
               </CardHeader>
-              <CardContent className="flex-grow space-y-3">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1 p-3 bg-muted/40 rounded-2xl">
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-bold uppercase tracking-tighter">
-                      <FileText className="w-3.5 h-3.5"/> Câu hỏi
+              <CardContent className="flex-grow">
+                 <div className={`p-4 rounded-2xl border transition-all ${isCompleted ? 'bg-accent/10 border-accent/20 text-accent-foreground' : 'bg-muted/40 border-border/50'}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2 font-bold text-sm">
+                        {isCompleted ? <CheckCircle className="w-4 h-4" /> : <Users className="w-4 h-4 text-muted-foreground" />}
+                        {isCompleted ? "Tất cả đã nộp" : "Tiến độ nộp bài"}
+                      </div>
+                      <span className="text-lg font-black">{assignmentSubmissions.length} / {targetStudentsCount}</span>
                     </div>
-                    <span className="text-lg font-black text-foreground">{assignment.questions.length}</span>
-                  </div>
-                  <div className="flex flex-col gap-1 p-3 bg-muted/40 rounded-2xl">
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-bold uppercase tracking-tighter">
-                      <Users className="w-3.5 h-3.5"/> Đã nộp
-                    </div>
-                    <span className="text-lg font-black text-foreground">{assignmentSubmissions.length} / {targetStudentsCount}</span>
-                  </div>
-                </div>
-
-                <div className="p-3 bg-primary/5 rounded-2xl border border-primary/10 space-y-1">
-                  <div className="flex items-center gap-1.5 text-[10px] text-primary font-black uppercase tracking-widest">
-                    <Clock className="w-3 h-3" /> Thời gian hiệu lực
-                  </div>
-                  <div className="text-[11px] font-bold text-foreground">
-                    {assignment.startDate ? format(parseISO(assignment.startDate), "HH:mm dd/MM", { locale: vi }) : "Ngay bây giờ"} 
-                    <span className="mx-1 text-muted-foreground">→</span>
-                    {assignment.endDate ? format(parseISO(assignment.endDate), "HH:mm dd/MM", { locale: vi }) : "Không giới hạn"}
-                  </div>
-                </div>
+                    {targetStudentsCount > 0 && (
+                      <div className="w-full bg-muted-foreground/10 rounded-full h-1.5 overflow-hidden">
+                        <div 
+                          className={`h-full transition-all ${isCompleted ? 'bg-accent' : 'bg-primary'}`} 
+                          style={{ width: `${(assignmentSubmissions.length / targetStudentsCount) * 100}%` }}
+                        />
+                      </div>
+                    )}
+                 </div>
               </CardContent>
-              <CardFooter className="bg-muted/30 p-4 flex justify-between items-center rounded-b-3xl">
+              <CardFooter className="bg-muted/30 p-4 flex justify-between items-center">
                 <div className="flex items-center gap-1">
                   <Button variant="ghost" size="icon" className="rounded-xl hover:bg-primary/10 hover:text-primary" onClick={() => onEdit(assignment)} title="Chỉnh sửa">
                     <Pencil className="w-4 h-4" />
