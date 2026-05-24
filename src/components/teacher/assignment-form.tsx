@@ -335,7 +335,7 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
           <Button onClick={addQuestion} variant="outline" className="rounded-full py-6"><Plus className="mr-2" /> Soạn câu hỏi thủ công</Button>
           <Dialog open={isAiModalOpen} onOpenChange={setAiModalOpen}>
               <DialogTrigger asChild>
-                  <Button variant="outline" className="rounded-full py-6"><Bot className="mr-2" /> Soạn bằng AI</Button>
+                  <Button variant="outline" className="rounded-full py-6"><Bot className="mr-2" /> Soạn câu hỏi bằng AI</Button>
               </DialogTrigger>
               <DialogContent className="rounded-3xl max-w-md">
                   <DialogHeader>
