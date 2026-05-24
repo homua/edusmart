@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -182,7 +181,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     if (!ids || ids.length === 0) return "Chưa gán";
     return ids
       .map(id => users.find(u => u.id === id)?.fullName || 'Không xác định')
-      .sort((a, b) => a.localeCompare(b, 'vi'))
+      .sort((a, b) => {
+          const nameA = a.trim().split(' ').pop() || '';
+          const nameB = b.trim().split(' ').pop() || '';
+          return nameA.localeCompare(nameB, 'vi');
+      })
       .join(', ');
   };
 
@@ -300,11 +303,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }).sort((a, b) => b.completionRate - a.completionRate);
 
     return { teacherStats, classStats };
-  }, [assignments, submissions, users, classes, timeRange]);
+  }, [assignments, submissions, users, classes, timeRange, allTeachers, studentsByClass]);
 
   const { teacherStats, classStats } = statsData;
-
-  const currentClass = classes.find(c => c.id === selectedClassId);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -495,41 +496,84 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </TabsContent>
                 
                 <TabsContent value="teachers" className="mt-6 space-y-4">
-                   <div className="flex items-center justify-between gap-2">
-                      <Button variant="outline" size="sm" onClick={handleExportTeachersExcel} className="rounded-xl h-10 px-4 font-bold border-2"><FileDown className="mr-2 h-4 w-4" /> Xuất danh sách GV</Button>
-                      {selectedTeachers.length > 0 && <Button variant="destructive" size="sm" onClick={handleBulkDeleteTeachers} className="rounded-xl h-10 px-4 font-bold"><Trash2 className="mr-2 h-4 w-4" /> Xóa đã chọn ({selectedTeachers.length})</Button>}
+                  <div className="flex items-center justify-between gap-4">
+                    <Button variant="outline" size="sm" onClick={handleExportTeachersExcel} className="rounded-xl h-10 px-4 font-bold border-2">
+                      <FileDown className="mr-2 h-4 w-4" /> Xuất danh sách GV
+                    </Button>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2 h-10 bg-muted/30 px-4 rounded-xl border border-border/50">
+                          <Checkbox 
+                              id="select-all-teachers"
+                              checked={selectedTeachers.length > 0 && allTeachers.length > 0 && selectedTeachers.length === allTeachers.length} 
+                              onCheckedChange={(checked) => setSelectedTeachers(checked ? allTeachers.map((t) => t.id) : [])}
+                          />
+                          <Label htmlFor="select-all-teachers" className="text-xs font-bold cursor-pointer whitespace-nowrap">Chọn tất cả</Label>
+                      </div>
+                      {selectedTeachers.length > 0 && (
+                        <Button variant="destructive" size="sm" onClick={handleBulkDeleteTeachers} className="rounded-xl h-10 px-4 font-bold">
+                          <Trash2 className="mr-2 h-4 w-4" /> Xóa ({selectedTeachers.length})
+                        </Button>
+                      )}
                     </div>
-                    <div className="rounded-2xl border border-border/50 overflow-hidden bg-card/50">
-                        <Table>
-                            <TableHeader className="bg-muted/30">
-                                <TableRow className="hover:bg-transparent">
-                                    <TableHead className="w-12 px-6"><Checkbox checked={selectedTeachers.length > 0 && selectedTeachers.length === allTeachers.length} onCheckedChange={(checked) => setSelectedTeachers(checked ? allTeachers.map(t => t.id) : [])}/></TableHead>
-                                    <TableHead className="font-black uppercase tracking-widest text-[10px] text-muted-foreground px-6">Giáo viên</TableHead>
-                                    <TableHead className="font-black uppercase tracking-widest text-[10px] text-muted-foreground px-6 text-right">Hành động</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                            {allTeachers.map(user => (
-                                <TableRow key={user.id} className="hover:bg-primary/5 transition-colors">
-                                <TableCell className="px-6"><Checkbox checked={selectedTeachers.includes(user.id)} onCheckedChange={() => handleToggleTeacherSelection(user.id)} /></TableCell>
-                                <TableCell className="px-6 py-4">
-                                    <div className="font-bold text-lg">{user.fullName}</div>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <span className="text-xs font-medium text-muted-foreground/70 bg-muted px-2 py-0.5 rounded-md">@{user.username}</span>
-                                        <span className="text-xs font-medium text-muted-foreground/70 bg-muted px-2 py-0.5 rounded-md">Mật khẩu: <b className="text-foreground">{user.password}</b></span>
-                                    </div>
-                                </TableCell>
-                                <TableCell className="px-6 py-4 text-right">
-                                    <div className="flex items-center justify-end gap-2">
-                                        <Button variant="ghost" size="icon" onClick={() => handleOpenEditUserModal(user)} className="rounded-full hover:bg-primary/10 hover:text-primary"><Pencil className="h-4 w-4" /></Button>
-                                        <Button variant="ghost" size="icon" onClick={() => onDeleteUser(user)} className="text-destructive hover:bg-destructive/10 rounded-full"><Trash2 className="h-4 w-4" /></Button>
-                                    </div>
-                                </TableCell>
-                                </TableRow>
-                            ))}
-                            </TableBody>
-                        </Table>
+                  </div>
+
+                  <ScrollArea className="h-[500px] w-full rounded-2xl border border-border/50 bg-muted/10 p-4">
+                    <div className="grid grid-cols-1 gap-4">
+                      {allTeachers.map(user => (
+                        <div key={user.id} className={`group relative p-5 rounded-2xl border-2 transition-all flex flex-col md:flex-row md:items-center gap-4 ${selectedTeachers.includes(user.id) ? 'bg-primary/5 border-primary shadow-md' : 'bg-card border-transparent hover:border-primary/20 hover:shadow-sm'}`}>
+                          <div className="absolute top-4 right-4 md:static md:order-last z-10">
+                            <Checkbox 
+                                checked={selectedTeachers.includes(user.id)} 
+                                onCheckedChange={() => handleToggleTeacherSelection(user.id)} 
+                            />
+                          </div>
+                          
+                          <div className="flex items-center gap-3 flex-1">
+                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center font-black text-primary flex-shrink-0">
+                                {user.fullName.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                                <p className="font-black text-foreground truncate leading-tight text-lg">{user.fullName}</p>
+                                <p className="text-xs text-muted-foreground/70 truncate">@{user.username}</p>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1 flex-1">
+                            <div className="text-[10px] uppercase font-black tracking-widest text-muted-foreground/60">Thông tin đăng nhập</div>
+                            <div className="bg-muted/50 p-2 rounded-xl text-xs flex justify-between items-center gap-4">
+                                <span className="font-mono text-foreground/80 truncate">TK: {user.username}</span>
+                                <span className="font-black text-primary flex-shrink-0">MK: {user.password}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-2 pt-1 md:pt-0 border-t md:border-t-0 border-border/50">
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => handleOpenEditUserModal(user)} 
+                                className="flex-1 md:flex-none h-9 px-4 rounded-lg text-[10px] font-black uppercase tracking-tighter hover:bg-primary/10 hover:text-primary"
+                            >
+                                <Pencil className="mr-1 h-3 w-3" /> Sửa
+                            </Button>
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => onDeleteUser(user)} 
+                                className="flex-1 md:flex-none h-9 px-4 rounded-lg text-[10px] font-black uppercase tracking-tighter text-destructive hover:bg-destructive/10"
+                            >
+                                <Trash2 className="mr-1 h-3 w-3" /> Xóa
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                      {allTeachers.length === 0 && (
+                        <div className="col-span-full flex flex-col items-center justify-center py-20 text-muted-foreground">
+                            <LayoutGrid className="h-12 w-12 opacity-10 mb-4" />
+                            <p className="italic font-medium">Không có giáo viên nào trong mục này.</p>
+                        </div>
+                      )}
                     </div>
+                  </ScrollArea>
                 </TabsContent>
                 
                 <TabsContent value="admins" className="mt-6">
