@@ -777,21 +777,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
                 </CardHeader>
                 <CardContent className="p-6">
-                  <div className="space-y-6">
-                    {teacherStats.map((stat, i) => (
-                      <div key={i} className="space-y-3">
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="font-bold flex items-center gap-2">
-                              <span className="text-[10px] w-5 h-5 flex items-center justify-center rounded-full bg-muted font-black">{i + 1}</span>
-                              {stat.name}
-                          </span>
-                          <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">{stat.count} bài tập</span>
+                  <ScrollArea className="h-[400px] pr-4">
+                    <div className="grid grid-cols-1 gap-4">
+                      {teacherStats.map((stat, i) => (
+                        <div key={i} className="p-4 rounded-2xl bg-muted/30 border border-border/50 hover:border-primary/20 transition-all space-y-3">
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="font-bold flex items-center gap-2 text-base">
+                                <span className="text-[10px] w-6 h-6 flex items-center justify-center rounded-full bg-primary text-primary-foreground font-black">{i + 1}</span>
+                                {stat.name}
+                            </span>
+                            <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-black px-3 py-1">
+                                {stat.count} bài tập
+                            </Badge>
+                          </div>
+                          <Progress value={stat.count > 0 ? (stat.count / Math.max(...teacherStats.map(s => s.count), 1)) * 100 : 0} className="h-2 rounded-full bg-muted" />
                         </div>
-                        <Progress value={stat.count > 0 ? (stat.count / Math.max(...teacherStats.map(s => s.count), 1)) * 100 : 0} className="h-2 rounded-full bg-muted/50" />
-                      </div>
-                    ))}
-                    {teacherStats.length === 0 && <p className="text-center text-muted-foreground py-12 italic">Chưa có dữ liệu bài tập trong giai đoạn này.</p>}
-                  </div>
+                      ))}
+                      {teacherStats.length === 0 && <p className="text-center text-muted-foreground py-12 italic">Chưa có dữ liệu bài tập trong giai đoạn này.</p>}
+                    </div>
+                  </ScrollArea>
                 </CardContent>
               </Card>
 
