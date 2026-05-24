@@ -27,7 +27,7 @@ const GenerateQuestionsInputSchema = z.object({
   subject: z.string().describe('The subject of the questions to generate.'),
   difficulty: DifficultyEnum.describe('The difficulty level of the questions.'),
   questionType: AIQuestionTypeEnum.describe('The specific format of questions to generate.'),
-  count: z.number().min(1).max(10).describe('The number of questions to generate.'),
+  count: z.number().min(1).max(50).describe('The number of questions to generate.'),
 });
 export type GenerateQuestionsInput = z.infer<typeof GenerateQuestionsInputSchema>;
 

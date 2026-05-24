@@ -409,7 +409,7 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
                               type="number" 
                               value={aiQuestionCount} 
                               onChange={e => setAiQuestionCount(parseInt(e.target.value) || 1)} 
-                              min="1" max="10"
+                              min="1" max="50"
                               className="h-12 rounded-xl"
                             />
                         </div>
