@@ -91,7 +91,11 @@ const StudentPortal: React.FC<StudentPortalProps> = ({
                  {submitted ? (
                   <div className='p-4 rounded-2xl bg-accent/10 border border-accent/20 text-accent-foreground'>
                     <div className="flex items-center gap-2 font-bold text-sm"><CheckCircle className="w-4 h-4" /> Đã nộp bài</div>
-                    <p className="mt-2 text-xs font-medium opacity-80">Điểm số: <span className="text-lg font-black">{submission?.score} / {totalPoints}</span></p>
+                    {submission?.isGraded ? (
+                      <p className="mt-2 text-xs font-medium opacity-80">Điểm số: <span className="text-lg font-black">{submission?.score} / {totalPoints}</span></p>
+                    ) : (
+                      <p className="mt-2 text-xs font-medium opacity-80 italic">Đây là câu hỏi tự luận, vì vậy hãy chờ giáo viên chấm</p>
+                    )}
                   </div>
                 ) : status === 'NOT_STARTED' ? (
                   <div className='p-4 rounded-2xl bg-muted text-muted-foreground flex items-center gap-2'>
