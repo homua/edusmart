@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState } from 'react';
@@ -13,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { Progress } from '@/components/ui/progress';
 
 interface TeacherDashboardProps {
   currentUser: User;
@@ -159,6 +159,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
           const targetStudentsCount = students.filter(s => assignment.classIds.includes(s.classId || '')).length;
           const isCompleted = assignmentSubmissions.length >= targetStudentsCount && targetStudentsCount > 0;
           const { status, message } = getTimeStatus(assignment);
+          const completionRate = Math.round((assignmentSubmissions.length / (targetStudentsCount || 1)) * 100);
 
           return (
             <Card key={assignment.id} className="rounded-3xl shadow-lg shadow-primary/5 flex flex-col overflow-hidden border-primary/10 hover:border-primary/30 transition-all group">
@@ -172,7 +173,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                   ) : status === 'NOT_STARTED' ? (
                     <Badge variant="secondary" className="text-[10px] uppercase font-black">Chưa đến giờ</Badge>
                   ) : status === 'EXPIRED' ? (
-                    <Badge variant="destructive" className="text-[10px] uppercase font-black">Đã kết thúc</Badge>
+                    <Badge className="bg-primary/20 text-primary text-[10px] uppercase font-black border-none">Đã kết thúc</Badge>
                   ) : (
                     <Badge variant="default" className="text-[10px] uppercase font-black">Đang diễn ra</Badge>
                   )}
@@ -188,14 +189,20 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-grow">
-                 <div className="p-5 rounded-2xl border-none transition-all bg-accent/10 text-accent-foreground">
-                    <div className="flex items-center gap-2 font-bold text-sm mb-3">
-                      <CheckCircle className="w-5 h-5 opacity-80" /> 
-                      Tiến độ nộp bài
+                 <div className="p-5 rounded-2xl border-none transition-all bg-primary/5 text-primary">
+                    <div className="flex items-center justify-between font-bold text-sm mb-3">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-5 h-5 opacity-80" /> 
+                        Tiến độ nộp bài
+                      </div>
+                      <span className="text-xs opacity-70">{completionRate}%</span>
                     </div>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-2xl font-black">{assignmentSubmissions.length}</span>
-                      <span className="text-muted-foreground/60 font-bold">/ {targetStudentsCount}</span>
+                    <div className="space-y-2">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-2xl font-black">{assignmentSubmissions.length}</span>
+                        <span className="text-muted-foreground/60 font-bold text-sm">/ {targetStudentsCount} bài</span>
+                      </div>
+                      <Progress value={completionRate} className="h-2 bg-primary/10" />
                     </div>
                  </div>
               </CardContent>
