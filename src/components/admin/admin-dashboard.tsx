@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -483,65 +482,68 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   
                   <ScrollArea className="h-[500px] w-full rounded-2xl border border-border/50 bg-muted/10 p-4">
                     <div className="grid grid-cols-1 gap-4">
-                      {currentStudentList.map(user => (
-                        <div key={user.id} className={`group relative p-5 rounded-2xl border-2 transition-all flex flex-col md:flex-row md:items-center gap-4 ${selectedStudents.includes(user.id) ? 'bg-primary/5 border-primary shadow-md' : 'bg-card border-transparent hover:border-primary/20 hover:shadow-sm'}`}>
-                          <div className="absolute top-4 right-4 md:static md:order-last z-10">
-                            <Checkbox 
-                                checked={selectedStudents.includes(user.id)} 
-                                onCheckedChange={() => handleToggleStudentSelection(user.id)} 
-                            />
-                          </div>
-                          
-                          <div className="flex items-center gap-3 flex-1">
-                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center font-black text-primary flex-shrink-0">
-                                {(user.fullName.trim().split(' ').pop() || '').charAt(0).toUpperCase()}
+                      {currentStudentList.map(user => {
+                        const firstName = user.fullName.trim().split(' ').pop() || '';
+                        return (
+                          <div key={user.id} className={`group relative p-5 rounded-2xl border-2 transition-all flex flex-col md:flex-row md:items-center gap-4 ${selectedStudents.includes(user.id) ? 'bg-primary/5 border-primary shadow-md' : 'bg-card border-transparent hover:border-primary/20 hover:shadow-sm'}`}>
+                            <div className="absolute top-4 right-4 md:static md:order-last z-10">
+                              <Checkbox 
+                                  checked={selectedStudents.includes(user.id)} 
+                                  onCheckedChange={() => handleToggleStudentSelection(user.id)} 
+                              />
                             </div>
-                            <div className="min-w-0">
-                                <p className="font-black text-foreground truncate leading-tight text-lg">{user.fullName}</p>
-                                <p className="text-xs text-muted-foreground/70 truncate">@{user.username}</p>
-                                {user.passwordUpdatedAt && (
-                                  <p className="text-[10px] text-muted-foreground/60 flex items-center mt-1">
-                                    <Clock className="w-2.5 h-2.5 mr-1" />
-                                    MK cập nhật: {format(parseISO(user.passwordUpdatedAt), "HH:mm, dd/MM", { locale: vi })}
-                                  </p>
-                                )}
+                            
+                            <div className="flex items-center gap-3 flex-1">
+                              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center font-black text-primary flex-shrink-0 text-sm overflow-hidden px-1">
+                                  {firstName}
+                              </div>
+                              <div className="min-w-0">
+                                  <p className="font-black text-foreground truncate leading-tight text-lg">{user.fullName}</p>
+                                  <p className="text-xs text-muted-foreground/70 truncate">@{user.username}</p>
+                                  {user.passwordUpdatedAt && (
+                                    <p className="text-[10px] text-muted-foreground/60 flex items-center mt-1">
+                                      <Clock className="w-2.5 h-2.5 mr-1" />
+                                      MK cập nhật: {format(parseISO(user.passwordUpdatedAt), "HH:mm, dd/MM", { locale: vi })}
+                                    </p>
+                                  )}
+                              </div>
                             </div>
-                          </div>
 
-                          <div className="space-y-1 flex-1">
-                            <div className="text-[10px] uppercase font-black tracking-widest text-muted-foreground/60 flex justify-between">
-                              <span>Thông tin đăng nhập</span>
-                              <Button variant="ghost" size="icon" className="h-4 w-4" onClick={() => handleCopyCredentials(user)} title="Sao chép tài khoản">
-                                <Copy className="h-2.5 w-2.5" />
+                            <div className="space-y-1 flex-1">
+                              <div className="text-[10px] uppercase font-black tracking-widest text-muted-foreground/60 flex justify-between">
+                                <span>Thông tin đăng nhập</span>
+                                <Button variant="ghost" size="icon" className="h-4 w-4" onClick={() => handleCopyCredentials(user)} title="Sao chép tài khoản">
+                                  <Copy className="h-2.5 w-2.5" />
+                                </Button>
+                              </div>
+                              <div className="bg-muted/50 p-2 rounded-xl text-xs flex justify-between items-center gap-4 border border-border/30">
+                                  <span className="font-mono text-foreground/80 truncate">TK: {user.username}</span>
+                                  <span className="font-black text-primary flex-shrink-0">MK: {user.password}</span>
+                              </div>
+                            </div>
+
+                            <div className="flex gap-2 pt-1 md:pt-0 border-t md:border-t-0 border-border/50">
+                              <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  onClick={() => handleOpenEditUserModal(user)} 
+                                  className="flex-1 md:flex-none h-9 px-4 rounded-lg text-[10px] font-black uppercase tracking-tighter hover:bg-primary/10 hover:text-primary"
+                                  title="Chỉnh sửa hoặc Cấp lại mật khẩu"
+                              >
+                                  <KeyRound className="mr-1 h-3 w-3" /> Cấp lại
+                              </Button>
+                              <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  onClick={() => onDeleteUser(user)} 
+                                  className="flex-1 md:flex-none h-9 px-4 rounded-lg text-[10px] font-black uppercase tracking-tighter text-destructive hover:bg-destructive/10"
+                              >
+                                  <Trash2 className="mr-1 h-3 w-3" /> Xóa
                               </Button>
                             </div>
-                            <div className="bg-muted/50 p-2 rounded-xl text-xs flex justify-between items-center gap-4 border border-border/30">
-                                <span className="font-mono text-foreground/80 truncate">TK: {user.username}</span>
-                                <span className="font-black text-primary flex-shrink-0">MK: {user.password}</span>
-                            </div>
                           </div>
-
-                          <div className="flex gap-2 pt-1 md:pt-0 border-t md:border-t-0 border-border/50">
-                            <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                onClick={() => handleOpenEditUserModal(user)} 
-                                className="flex-1 md:flex-none h-9 px-4 rounded-lg text-[10px] font-black uppercase tracking-tighter hover:bg-primary/10 hover:text-primary"
-                                title="Chỉnh sửa hoặc Cấp lại mật khẩu"
-                            >
-                                <KeyRound className="mr-1 h-3 w-3" /> Cấp lại
-                            </Button>
-                            <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                onClick={() => onDeleteUser(user)} 
-                                className="flex-1 md:flex-none h-9 px-4 rounded-lg text-[10px] font-black uppercase tracking-tighter text-destructive hover:bg-destructive/10"
-                            >
-                                <Trash2 className="mr-1 h-3 w-3" /> Xóa
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                       {currentStudentList.length === 0 && (
                         <div className="col-span-full flex flex-col items-center justify-center py-20 text-muted-foreground">
                             <LayoutGrid className="h-12 w-12 opacity-10 mb-4" />
@@ -576,65 +578,68 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
                   <ScrollArea className="h-[500px] w-full rounded-2xl border border-border/50 bg-muted/10 p-4">
                     <div className="grid grid-cols-1 gap-4">
-                      {allTeachers.map(user => (
-                        <div key={user.id} className={`group relative p-5 rounded-2xl border-2 transition-all flex flex-col md:flex-row md:items-center gap-4 ${selectedTeachers.includes(user.id) ? 'bg-primary/5 border-primary shadow-md' : 'bg-card border-transparent hover:border-primary/20 hover:shadow-sm'}`}>
-                          <div className="absolute top-4 right-4 md:static md:order-last z-10">
-                            <Checkbox 
-                                checked={selectedTeachers.includes(user.id)} 
-                                onCheckedChange={() => handleToggleTeacherSelection(user.id)} 
-                            />
-                          </div>
-                          
-                          <div className="flex items-center gap-3 flex-1">
-                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center font-black text-primary flex-shrink-0">
-                                {(user.fullName.trim().split(' ').pop() || '').charAt(0).toUpperCase()}
+                      {allTeachers.map(user => {
+                        const firstName = user.fullName.trim().split(' ').pop() || '';
+                        return (
+                          <div key={user.id} className={`group relative p-5 rounded-2xl border-2 transition-all flex flex-col md:flex-row md:items-center gap-4 ${selectedTeachers.includes(user.id) ? 'bg-primary/5 border-primary shadow-md' : 'bg-card border-transparent hover:border-primary/20 hover:shadow-sm'}`}>
+                            <div className="absolute top-4 right-4 md:static md:order-last z-10">
+                              <Checkbox 
+                                  checked={selectedTeachers.includes(user.id)} 
+                                  onCheckedChange={() => handleToggleTeacherSelection(user.id)} 
+                              />
                             </div>
-                            <div className="min-w-0">
-                                <p className="font-black text-foreground truncate leading-tight text-lg">{user.fullName}</p>
-                                <p className="text-xs text-muted-foreground/70 truncate">@{user.username}</p>
-                                {user.passwordUpdatedAt && (
-                                  <p className="text-[10px] text-muted-foreground/60 flex items-center mt-1">
-                                    <Clock className="w-2.5 h-2.5 mr-1" />
-                                    MK cập nhật: {format(parseISO(user.passwordUpdatedAt), "HH:mm, dd/MM/yyyy", { locale: vi })}
-                                  </p>
-                                )}
+                            
+                            <div className="flex items-center gap-3 flex-1">
+                              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center font-black text-primary flex-shrink-0 text-sm overflow-hidden px-1">
+                                  {firstName}
+                              </div>
+                              <div className="min-w-0">
+                                  <p className="font-black text-foreground truncate leading-tight text-lg">{user.fullName}</p>
+                                  <p className="text-xs text-muted-foreground/70 truncate">@{user.username}</p>
+                                  {user.passwordUpdatedAt && (
+                                    <p className="text-[10px] text-muted-foreground/60 flex items-center mt-1">
+                                      <Clock className="w-2.5 h-2.5 mr-1" />
+                                      MK cập nhật: {format(parseISO(user.passwordUpdatedAt), "HH:mm, dd/MM/yyyy", { locale: vi })}
+                                    </p>
+                                  )}
+                              </div>
                             </div>
-                          </div>
 
-                          <div className="space-y-1 flex-1">
-                            <div className="text-[10px] uppercase font-black tracking-widest text-muted-foreground/60 flex justify-between">
-                              <span>Thông tin đăng nhập</span>
-                              <Button variant="ghost" size="icon" className="h-4 w-4" onClick={() => handleCopyCredentials(user)} title="Sao chép tài khoản">
-                                <Copy className="h-2.5 w-2.5" />
+                            <div className="space-y-1 flex-1">
+                              <div className="text-[10px] uppercase font-black tracking-widest text-muted-foreground/60 flex justify-between">
+                                <span>Thông tin đăng nhập</span>
+                                <Button variant="ghost" size="icon" className="h-4 w-4" onClick={() => handleCopyCredentials(user)} title="Sao chép tài khoản">
+                                  <Copy className="h-2.5 w-2.5" />
+                                </Button>
+                              </div>
+                              <div className="bg-muted/50 p-2 rounded-xl text-xs flex justify-between items-center gap-4 border border-border/30">
+                                  <span className="font-mono text-foreground/80 truncate">TK: {user.username}</span>
+                                  <span className="font-black text-primary flex-shrink-0">MK: {user.password}</span>
+                              </div>
+                            </div>
+
+                            <div className="flex gap-2 pt-1 md:pt-0 border-t md:border-t-0 border-border/50">
+                              <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  onClick={() => handleOpenEditUserModal(user)} 
+                                  className="flex-1 md:flex-none h-9 px-4 rounded-lg text-[10px] font-black uppercase tracking-tighter hover:bg-primary/10 hover:text-primary"
+                                  title="Cấp lại mật khẩu cho giáo viên"
+                              >
+                                  <KeyRound className="mr-1 h-3 w-3" /> Cấp lại
+                              </Button>
+                              <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  onClick={() => onDeleteUser(user)} 
+                                  className="flex-1 md:flex-none h-9 px-4 rounded-lg text-[10px] font-black uppercase tracking-tighter text-destructive hover:bg-destructive/10"
+                              >
+                                  <Trash2 className="mr-1 h-3 w-3" /> Xóa
                               </Button>
                             </div>
-                            <div className="bg-muted/50 p-2 rounded-xl text-xs flex justify-between items-center gap-4 border border-border/30">
-                                <span className="font-mono text-foreground/80 truncate">TK: {user.username}</span>
-                                <span className="font-black text-primary flex-shrink-0">MK: {user.password}</span>
-                            </div>
                           </div>
-
-                          <div className="flex gap-2 pt-1 md:pt-0 border-t md:border-t-0 border-border/50">
-                            <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                onClick={() => handleOpenEditUserModal(user)} 
-                                className="flex-1 md:flex-none h-9 px-4 rounded-lg text-[10px] font-black uppercase tracking-tighter hover:bg-primary/10 hover:text-primary"
-                                title="Cấp lại mật khẩu cho giáo viên"
-                            >
-                                <KeyRound className="mr-1 h-3 w-3" /> Cấp lại
-                            </Button>
-                            <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                onClick={() => onDeleteUser(user)} 
-                                className="flex-1 md:flex-none h-9 px-4 rounded-lg text-[10px] font-black uppercase tracking-tighter text-destructive hover:bg-destructive/10"
-                            >
-                                <Trash2 className="mr-1 h-3 w-3" /> Xóa
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                       {allTeachers.length === 0 && (
                         <div className="col-span-full flex flex-col items-center justify-center py-20 text-muted-foreground">
                             <LayoutGrid className="h-12 w-12 opacity-10 mb-4" />

@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState } from 'react';
@@ -247,56 +246,59 @@ const ClassRoster: React.FC<ClassRosterProps> = ({
           
           <ScrollArea className="h-[600px] w-full bg-muted/10 p-4">
             <div className="grid grid-cols-1 gap-4">
-              {students.map(s => (
-                <div key={s.id} className={`group relative p-5 rounded-2xl border-2 transition-all flex flex-col md:flex-row md:items-center gap-4 ${selectedStudents.includes(s.id) ? 'bg-primary/5 border-primary shadow-md' : 'bg-card border-transparent hover:border-primary/20 hover:shadow-sm'}`}>
-                  <div className="absolute top-4 right-4 md:static md:order-first z-10">
-                    <Checkbox
-                      checked={selectedStudents.includes(s.id)}
-                      onCheckedChange={(checked) => setSelectedStudents(prev => checked ? [...prev, s.id] : prev.filter(id => id !== s.id))}
-                    />
-                  </div>
-                  
-                  <div className="flex items-center gap-4 flex-1">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center font-black text-primary flex-shrink-0">
-                        {(s.fullName.trim().split(' ').pop() || '').charAt(0).toUpperCase()}
+              {students.map(s => {
+                const firstName = s.fullName.trim().split(' ').pop() || '';
+                return (
+                  <div key={s.id} className={`group relative p-5 rounded-2xl border-2 transition-all flex flex-col md:flex-row md:items-center gap-4 ${selectedStudents.includes(s.id) ? 'bg-primary/5 border-primary shadow-md' : 'bg-card border-transparent hover:border-primary/20 hover:shadow-sm'}`}>
+                    <div className="absolute top-4 right-4 md:static md:order-first z-10">
+                      <Checkbox
+                        checked={selectedStudents.includes(s.id)}
+                        onCheckedChange={(checked) => setSelectedStudents(prev => checked ? [...prev, s.id] : prev.filter(id => id !== s.id))}
+                      />
                     </div>
-                    <div className="min-w-0">
-                      <h4 className="font-black text-foreground text-lg truncate leading-tight">{s.fullName}</h4>
-                      <p className="text-xs text-muted-foreground/70 truncate">@{s.username}</p>
-                      {s.passwordUpdatedAt && (
-                        <p className="text-[10px] text-muted-foreground/60 flex items-center mt-1">
-                          <Clock className="w-2.5 h-2.5 mr-1" />
-                          MK cập nhật: {format(parseISO(s.passwordUpdatedAt), "HH:mm, dd/MM", { locale: vi })}
-                        </p>
-                      )}
+                    
+                    <div className="flex items-center gap-4 flex-1">
+                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center font-black text-primary flex-shrink-0 text-sm overflow-hidden px-1">
+                          {firstName}
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-black text-foreground text-lg truncate leading-tight">{s.fullName}</h4>
+                        <p className="text-xs text-muted-foreground/70 truncate">@{s.username}</p>
+                        {s.passwordUpdatedAt && (
+                          <p className="text-[10px] text-muted-foreground/60 flex items-center mt-1">
+                            <Clock className="w-2.5 h-2.5 mr-1" />
+                            MK cập nhật: {format(parseISO(s.passwordUpdatedAt), "HH:mm, dd/MM", { locale: vi })}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="flex-[1.5] space-y-1">
-                    <div className="text-[10px] uppercase font-black tracking-widest text-muted-foreground/60 flex justify-between">
-                      <span>Thông tin tài khoản</span>
-                      <Button variant="ghost" size="icon" className="h-4 w-4" onClick={() => handleCopyCredentials(s)} title="Sao chép tài khoản">
-                        <Copy className="h-2.5 w-2.5" />
+                    
+                    <div className="flex-[1.5] space-y-1">
+                      <div className="text-[10px] uppercase font-black tracking-widest text-muted-foreground/60 flex justify-between">
+                        <span>Thông tin tài khoản</span>
+                        <Button variant="ghost" size="icon" className="h-4 w-4" onClick={() => handleCopyCredentials(s)} title="Sao chép tài khoản">
+                          <Copy className="h-2.5 w-2.5" />
+                        </Button>
+                      </div>
+                      <div className="bg-muted/50 p-2.5 rounded-xl text-xs flex justify-between items-center gap-4 border border-border/30">
+                          <span className="font-mono text-foreground/80 truncate">TK: {s.username}</span>
+                          <span className="font-black text-primary flex-shrink-0">MK: {s.password}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 pt-1 md:pt-0 border-t md:border-t-0 border-border/50">
+                      <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => onDeleteStudents([s.id])} 
+                          className="flex-1 md:flex-none h-9 px-4 rounded-lg text-[10px] font-black uppercase tracking-tighter text-destructive hover:bg-destructive/10"
+                      >
+                          <Trash2 className="mr-1 h-3 w-3" /> Xóa
                       </Button>
                     </div>
-                    <div className="bg-muted/50 p-2.5 rounded-xl text-xs flex justify-between items-center gap-4 border border-border/30">
-                        <span className="font-mono text-foreground/80 truncate">TK: {s.username}</span>
-                        <span className="font-black text-primary flex-shrink-0">MK: {s.password}</span>
-                    </div>
                   </div>
-
-                  <div className="flex gap-2 pt-1 md:pt-0 border-t md:border-t-0 border-border/50">
-                    <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => onDeleteStudents([s.id])} 
-                        className="flex-1 md:flex-none h-9 px-4 rounded-lg text-[10px] font-black uppercase tracking-tighter text-destructive hover:bg-destructive/10"
-                    >
-                        <Trash2 className="mr-1 h-3 w-3" /> Xóa
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
               {students.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
                     <LayoutGrid className="h-12 w-12 opacity-10 mb-4" />
