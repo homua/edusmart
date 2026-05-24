@@ -110,10 +110,15 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
   };
   
   const handleGenerateQuestions = async () => {
-    if (!title || !subject) {
-      toast({ variant: 'destructive', description: 'Vui lòng nhập nội dung bài tập và môn học trước khi tạo bằng AI.' });
+    if (!title.trim()) {
+      toast({ variant: 'destructive', title: 'Thiếu thông tin', description: 'Vui lòng nhập "Nội dung bài tập" ở biểu mẫu chính để AI có dữ liệu soạn câu hỏi.' });
       return;
     }
+    if (!subject) {
+      toast({ variant: 'destructive', title: 'Thiếu thông tin', description: 'Vui lòng chọn "Môn học" ở biểu mẫu chính để AI biết chủ đề cần soạn.' });
+      return;
+    }
+
     setIsGenerating(true);
     try {
       const input: GenerateQuestionsInput = {
@@ -124,6 +129,11 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
         count: aiQuestionCount,
       };
       const newQuestions = await generateQuestionsAI(input);
+      
+      if (!newQuestions || newQuestions.length === 0) {
+        throw new Error("AI không trả về kết quả.");
+      }
+
       // Map generated questions back to our app's internal QuestionType
       const mappedQuestions: Question[] = newQuestions.map(q => ({
           ...q,
@@ -132,11 +142,12 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
       setQuestions(prev => [...prev, ...mappedQuestions]);
       toast({ 
         title: 'Thành công!', 
-        description: `Đã tạo ${newQuestions.length} câu hỏi bằng AI.` 
+        description: `Đã tạo thêm ${newQuestions.length} câu hỏi bằng AI.` 
       });
       setAiModalOpen(false);
     } catch (error) {
-      toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể tạo câu hỏi bằng AI.' });
+      console.error("AI Generation Error:", error);
+      toast({ variant: 'destructive', title: 'Lỗi', description: 'Không thể tạo câu hỏi bằng AI vào lúc này. Vui lòng thử lại sau.' });
     } finally {
       setIsGenerating(false);
     }
@@ -164,13 +175,13 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
       <Card className="rounded-3xl shadow-lg shadow-primary/5">
         <CardContent className="p-8 space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="title" className="text-lg font-bold">Nội dung bài tập</Label>
+            <Label htmlFor="title" className="text-lg font-bold">Nội dung bài tập <span className="text-destructive">*</span></Label>
             <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ví dụ: Phân tích nhân vật Dế Mèn" className="py-6 text-lg rounded-xl"/>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="subject" className="text-lg font-bold">Môn học</Label>
+              <Label htmlFor="subject" className="text-lg font-bold">Môn học <span className="text-destructive">*</span></Label>
               <Select value={subject} onValueChange={setSubject}>
                   <SelectTrigger id="subject" className="py-6 text-lg rounded-xl">
                       <SelectValue placeholder="Chọn môn học" />
@@ -189,7 +200,7 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="classes" className="text-lg font-bold">Giao cho lớp</Label>
+              <Label htmlFor="classes" className="text-lg font-bold">Giao cho lớp <span className="text-destructive">*</span></Label>
               <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                       <Button id="classes" variant="outline" className="py-6 text-lg rounded-xl w-full justify-between font-normal text-left">
@@ -406,7 +417,7 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
                       <Button variant="ghost" onClick={() => setAiModalOpen(false)} className="rounded-xl">Hủy</Button>
                       <Button 
                         onClick={handleGenerateQuestions} 
-                        disabled={isGenerating || !subject || !title}
+                        disabled={isGenerating}
                         className="rounded-xl font-bold px-8 shadow-lg shadow-primary/10"
                       >
                           {isGenerating ? "Đang tạo..." : "Bắt đầu tạo"}

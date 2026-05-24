@@ -53,20 +53,20 @@ const generateQuestionsPrompt = ai.definePrompt({
   input: {schema: GenerateQuestionsInputSchema},
   output: {schema: GenerateQuestionsOutputSchema},
   prompt: `Bạn là một trợ lý chuyên gia thiết kế chương trình giảng dạy của Việt Nam.
-Nhiệm vụ: Tạo ra {{count}} câu hỏi cho bài tập "{{title}}" thuộc môn {{subject}} với độ khó {{difficulty}}.
+Nhiệm vụ: Tạo ra chính xác {{count}} câu hỏi cho bài tập "{{title}}" thuộc môn {{subject}} với độ khó {{difficulty}}.
 
 Yêu cầu cụ thể về dạng câu hỏi ({{questionType}}):
-1. Nếu là 'TEXT': Tạo câu hỏi Tự luận dài, yêu cầu học sinh phân tích hoặc giải thích. (type: 'TEXT')
-2. Nếu là 'MCQ_4': Tạo câu hỏi Trắc nghiệm có 4 lựa chọn A, B, C, D. (type: 'MULTIPLE_CHOICE', 4 options)
+1. Nếu là 'TEXT': Tạo câu hỏi Tự luận dài, yêu cầu học sinh phân tích hoặc giải thích. (type: 'TEXT', không cần options)
+2. Nếu là 'MCQ_4': Tạo câu hỏi Trắc nghiệm có 4 lựa chọn A, B, C, D. (type: 'MULTIPLE_CHOICE', options phải có 4 lựa chọn)
 3. Nếu là 'TRUE_FALSE': Tạo câu hỏi Trắc nghiệm Đúng/Sai. (type: 'MULTIPLE_CHOICE', options: ['Đúng', 'Sai'])
-4. Nếu là 'SHORT_ANSWER': Tạo câu hỏi yêu cầu trả lời ngắn gọn (1-2 từ hoặc 1 cụm từ). (type: 'TEXT')
+4. Nếu là 'SHORT_ANSWER': Tạo câu hỏi yêu cầu trả lời ngắn gọn (1-2 từ hoặc 1 cụm từ). (type: 'TEXT', không cần options)
 5. Nếu là 'ALL_MCQ': Hãy tạo một mảng hỗn hợp bao gồm cả Trắc nghiệm 4 đáp án, Đúng/Sai và Trả lời ngắn.
 
 Quy tắc:
-- Mức điểm phù hợp: 0.25, 0.5, 1, 2, 3, 4, 5 dựa trên độ khó.
-- Ngôn ngữ: Tiếng Việt chuẩn.
-- ID: 'q_' + ngẫu nhiên.
-- Chỉ trả về mảng JSON.`,
+- Mức điểm phù hợp: 0.25, 0.5, 1, 2, 3, 4, 5 dựa trên độ khó của từng câu.
+- Ngôn ngữ: Tiếng Việt chuẩn, văn phong sư phạm.
+- ID: 'q_' + một chuỗi ngẫu nhiên.
+- Luôn trả về dữ liệu dưới dạng mảng JSON các đối tượng câu hỏi theo đúng cấu trúc schema yêu cầu.`,
 });
 
 const generateQuestionsFlow = ai.defineFlow(
@@ -77,6 +77,13 @@ const generateQuestionsFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await generateQuestionsPrompt(input);
-    return output!.map(q => ({...q, id: `q_${Date.now()}_${Math.random().toString(36).substring(2, 9)}` }));
+    if (!output) {
+      throw new Error("AI không tạo được câu hỏi. Hãy thử lại với tiêu đề hoặc môn học rõ ràng hơn.");
+    }
+    // Đảm bảo ID luôn duy nhất bằng cách thêm timestamp vào kết quả AI
+    return output.map(q => ({
+      ...q, 
+      id: `q_${Date.now()}_${Math.random().toString(36).substring(2, 9)}` 
+    }));
   }
 );
