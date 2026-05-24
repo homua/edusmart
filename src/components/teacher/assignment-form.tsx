@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -333,7 +332,7 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
 
       <div className="flex justify-between items-center">
         <div className="flex gap-2">
-          <Button onClick={addQuestion} variant="outline" className="rounded-full py-6"><Plus className="mr-2" /> Thêm câu hỏi</Button>
+          <Button onClick={addQuestion} variant="outline" className="rounded-full py-6"><Plus className="mr-2" /> Soạn câu hỏi thủ công</Button>
           <Dialog open={isAiModalOpen} onOpenChange={setAiModalOpen}>
               <DialogTrigger asChild>
                   <Button variant="outline" className="rounded-full py-6"><Bot className="mr-2" /> Soạn bằng AI</Button>
