@@ -43,19 +43,21 @@ const SubmissionReview: React.FC<SubmissionReviewProps> = ({ assignment, submiss
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-4 bg-muted/50 rounded-xl border border-border/50">
+                    <div className={`p-4 rounded-xl border ${isCorrect ? 'bg-accent/10 border-accent/20' : 'bg-destructive/5 border-destructive/10'}`}>
                       <p className="text-[10px] font-black uppercase text-muted-foreground mb-2 tracking-widest">Câu trả lời của bạn</p>
                       <div className="flex items-center gap-2">
                         {isCorrect ? <CheckCircle className="text-accent h-5 w-5" /> : <XCircle className="text-destructive h-5 w-5" />}
-                        <p className="font-bold">{studentAnswer?.answer || '(Chưa trả lời)'}</p>
+                        <p className={`font-black ${isCorrect ? 'text-accent' : 'text-destructive'}`}>
+                          {studentAnswer?.answer || '(Chưa trả lời)'}
+                        </p>
                       </div>
                     </div>
                     <div className="p-4 bg-primary/5 border border-primary/10 rounded-xl">
                       <p className="text-[10px] font-black uppercase text-primary/60 mb-2 tracking-widest">Đáp án đúng</p>
-                      <p className="font-bold text-primary">{q.correctAnswer}</p>
+                      <p className="font-black text-primary">{q.correctAnswer}</p>
                     </div>
                   </div>
-                  {q.type === 'MULTIPLE_CHOICE' && (
+                  {q.type === 'MULTIPLE_CHOICE' && q.options && q.options.length > 0 && (
                     <div className="flex flex-wrap gap-2">
                       {q.options?.map((opt, i) => (
                         <div 

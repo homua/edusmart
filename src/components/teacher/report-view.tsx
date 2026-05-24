@@ -68,17 +68,29 @@ const ReportView: React.FC<ReportViewProps> = ({ assignment, submissions, onBack
             {submissions.map(sub => (
               <AccordionItem value={sub.id} key={sub.id}>
                 <AccordionTrigger className="font-bold text-lg">{sub.studentName} - {sub.score} điểm</AccordionTrigger>
-                <AccordionContent className="space-y-4 p-4 bg-muted/50 rounded-lg">
+                <AccordionContent className="space-y-4 p-4 bg-muted/20 rounded-2xl">
                   {assignment.questions.map((q, index) => {
                     const studentAnswer = sub.answers.find(a => a.questionId === q.id);
                     const isCorrect = studentAnswer?.answer.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase();
                     return (
-                        <div key={q.id} className="p-4 bg-background rounded-lg shadow-sm">
-                            <p className="font-bold">{index + 1}. {q.text} <span className="text-muted-foreground">({q.points} điểm)</span></p>
-                            <p className="mt-2">Đáp án đúng: <span className="font-mono bg-secondary px-2 py-1 rounded-md text-sm">{q.correctAnswer}</span></p>
-                            <div className={`mt-2 flex items-center gap-2 p-2 rounded-md ${isCorrect ? 'bg-accent/20 text-accent-foreground' : 'bg-destructive/10 text-destructive-foreground'}`}>
-                                {isCorrect ? <CheckCircle className="h-5 w-5 text-accent" /> : <XCircle className="h-5 w-5 text-destructive" />}
-                                <p>Học sinh trả lời: <span className="font-mono bg-muted text-foreground px-2 py-1 rounded-md text-sm border border-border/50">{studentAnswer?.answer || 'Chưa trả lời'}</span></p>
+                        <div key={q.id} className="p-5 bg-card rounded-2xl shadow-sm border border-border/50">
+                            <p className="font-black text-foreground mb-4">{index + 1}. {q.text} <span className="text-muted-foreground font-normal ml-2">({q.points} điểm)</span></p>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="p-3 bg-muted/30 rounded-xl border border-border/30">
+                                <p className="text-[10px] font-black uppercase text-muted-foreground mb-1 tracking-widest">Đáp án đúng</p>
+                                <p className="font-bold text-primary">{q.correctAnswer}</p>
+                              </div>
+                              
+                              <div className={`p-3 rounded-xl border ${isCorrect ? 'bg-accent/10 border-accent/20' : 'bg-destructive/5 border-destructive/10'}`}>
+                                <p className="text-[10px] font-black uppercase text-muted-foreground mb-1 tracking-widest flex items-center justify-between">
+                                  Học sinh trả lời
+                                  {isCorrect ? <CheckCircle className="h-3 w-3 text-accent" /> : <XCircle className="h-3 w-3 text-destructive" />}
+                                </p>
+                                <p className={`font-black ${isCorrect ? 'text-accent' : 'text-destructive'}`}>
+                                  {studentAnswer?.answer || 'Chưa trả lời'}
+                                </p>
+                              </div>
                             </div>
                         </div>
                     )
