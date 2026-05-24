@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import type { Assignment, Submission } from '@/lib/types';
+import { QuestionType, type Assignment, type Submission } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -35,7 +35,6 @@ const AssignmentRunner: React.FC<AssignmentRunnerProps> = ({
   
   const totalQuestions = assignment.questions.length;
   
-  // Safety check for empty assignments
   if (totalQuestions === 0) {
     return (
       <div className="text-center py-20 space-y-4">
@@ -66,7 +65,6 @@ const AssignmentRunner: React.FC<AssignmentRunnerProps> = ({
   const handleSubmit = () => {
     if (isSubmitting) return;
 
-    // Validation: Check if all questions are answered
     const answeredCount = Object.keys(answers).filter(key => answers[key].trim() !== '').length;
     if (answeredCount < totalQuestions) {
       if (!window.confirm("Bạn chưa trả lời hết các câu hỏi. Bạn có chắc chắn muốn nộp bài không?")) {
@@ -76,14 +74,22 @@ const AssignmentRunner: React.FC<AssignmentRunnerProps> = ({
 
     setIsSubmitting(true);
     
-    let score = 0;
+    let autoScore = 0;
+    const hasTextQuestions = assignment.questions.some(q => q.type === QuestionType.TEXT);
+
     const submissionAnswers = assignment.questions.map(q => {
       const studentAnswer = answers[q.id] || '';
-      // Basic grading for objective/short answer questions
-      if (studentAnswer.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase()) {
-        score += q.points;
+      let awardedPoints = 0;
+      
+      // Auto-grade multiple choice / short answer (objective)
+      if (q.type === QuestionType.MULTIPLE_CHOICE) {
+        if (studentAnswer.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase()) {
+          awardedPoints = q.points;
+          autoScore += awardedPoints;
+        }
       }
-      return { questionId: q.id, answer: studentAnswer };
+      
+      return { questionId: q.id, answer: studentAnswer, awardedPoints };
     });
 
     const submissionId = `sub_${assignment.id}_${studentId}`;
@@ -93,24 +99,22 @@ const AssignmentRunner: React.FC<AssignmentRunnerProps> = ({
       studentId,
       studentName,
       answers: submissionAnswers,
-      score: parseFloat(score.toFixed(2)),
-      isGraded: true,
+      score: parseFloat(autoScore.toFixed(2)),
+      isGraded: !hasTextQuestions, // Mark as fully graded ONLY if no essay questions
       submittedAt: new Date().toISOString(),
     };
 
-    // Non-blocking submission: UI navigates immediately
     onSubmit(newSubmission);
     
     toast({ 
       title: 'Đang xử lý nộp bài...', 
-      description: 'Hệ thống đang lưu kết quả của bạn.' 
+      description: hasTextQuestions ? 'Bài làm đã được gửi. Giáo viên sẽ chấm điểm phần tự luận sau.' : 'Hệ thống đã lưu kết quả của bạn.' 
     });
   };
   
   const progress = totalQuestions > 0 ? ((currentQuestionIndex + 1) / totalQuestions) * 100 : 0;
 
-  // Determine if it's an objective question with options or a fill-in-the-blank/essay
-  const isObjectiveWithOptions = currentQuestion.type === 'MULTIPLE_CHOICE' && currentQuestion.options && currentQuestion.options.length > 0;
+  const isObjectiveWithOptions = currentQuestion.type === QuestionType.MULTIPLE_CHOICE && currentQuestion.options && currentQuestion.options.length > 0;
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in duration-500 pb-20">
@@ -147,13 +151,13 @@ const AssignmentRunner: React.FC<AssignmentRunnerProps> = ({
           ) : (
             <div className="space-y-4">
               <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                {currentQuestion.type === 'MULTIPLE_CHOICE' ? 'Nhập câu trả lời ngắn của bạn:' : 'Nhập nội dung bài làm tự luận:'}
+                {currentQuestion.type === QuestionType.MULTIPLE_CHOICE ? 'Nhập câu trả lời ngắn của bạn:' : 'Nhập nội dung bài làm tự luận:'}
               </p>
               <Textarea
                 value={answers[currentQuestion.id] || ''}
                 onChange={(e) => handleAnswerChange(currentQuestion.id, e.target.value)}
-                placeholder={currentQuestion.type === 'MULTIPLE_CHOICE' ? "Câu trả lời của bạn..." : "Nhập câu trả lời của bạn tại đây..."}
-                className={currentQuestion.type === 'MULTIPLE_CHOICE' ? "min-h-[100px] rounded-2xl text-lg p-6 bg-muted/30 border-2 focus:border-primary transition-all" : "min-h-[180px] rounded-2xl text-lg p-6 bg-muted/30 border-2 focus:border-primary transition-all"}
+                placeholder={currentQuestion.type === QuestionType.MULTIPLE_CHOICE ? "Câu trả lời của bạn..." : "Nhập câu trả lời của bạn tại đây..."}
+                className={currentQuestion.type === QuestionType.MULTIPLE_CHOICE ? "min-h-[100px] rounded-2xl text-lg p-6 bg-muted/30 border-2 focus:border-primary transition-all" : "min-h-[180px] rounded-2xl text-lg p-6 bg-muted/30 border-2 focus:border-primary transition-all"}
               />
             </div>
           )}

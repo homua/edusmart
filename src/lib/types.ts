@@ -52,7 +52,7 @@ export interface Submission {
   assignmentId: string;
   studentId: string;
   studentName: string;
-  answers: { questionId: string; answer: string }[];
+  answers: { questionId: string; answer: string; awardedPoints?: number }[];
   score: number;
   submittedAt: string; // ISO date string
   isGraded: boolean;
