@@ -6,7 +6,7 @@ import type { User, Class, Assignment, Submission } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Users, Trash2, FileText, PieChart, Pencil, KeyRound, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Plus, Users, Trash2, FileText, PieChart, Pencil, KeyRound, Clock, CheckCircle, AlertCircle, Search } from 'lucide-react';
 import { format, parseISO, isAfter, isBefore } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -164,11 +164,11 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
             <Card key={assignment.id} className="rounded-3xl shadow-lg shadow-primary/5 flex flex-col overflow-hidden border-primary/10 hover:border-primary/30 transition-all group">
               <CardHeader>
                 <div className="flex justify-between items-start gap-2 mb-1">
-                  <Badge variant="outline" className="text-[10px] uppercase tracking-tighter font-black">
+                  <Badge variant="outline" className="text-[10px] border-muted-foreground/20 text-muted-foreground uppercase tracking-tighter font-black">
                     {assignment.subject}
                   </Badge>
                   {isCompleted ? (
-                    <Badge className="bg-accent text-accent-foreground text-[10px] uppercase font-black">Hoàn thành</Badge>
+                    <Badge className="bg-accent hover:bg-accent text-accent-foreground text-[10px] uppercase font-black">Hoàn thành</Badge>
                   ) : status === 'NOT_STARTED' ? (
                     <Badge variant="secondary" className="text-[10px] uppercase font-black">Chưa đến giờ</Badge>
                   ) : status === 'EXPIRED' ? (
@@ -178,60 +178,53 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                   )}
                 </div>
                 <CardTitle className="text-xl group-hover:text-primary transition-colors">{assignment.title}</CardTitle>
-                <CardDescription className="flex items-center gap-4 mt-2">
-                  <div className="flex items-center gap-1 font-medium">
-                    <FileText className="w-3.5 h-3.5 text-primary" /> {assignment.questions.length} câu
+                <CardDescription className="flex flex-col gap-1 mt-2">
+                  <div className="flex items-center gap-1.5 font-medium text-muted-foreground/80">
+                    <FileText className="w-4 h-4 text-primary/70" /> {assignment.questions.length} câu
                   </div>
-                  <div className="flex items-center gap-1 font-medium">
-                    <Clock className="w-3.5 h-3.5 text-primary" /> {message}
+                  <div className="flex items-center gap-1.5 font-medium text-muted-foreground/80">
+                    <Clock className="w-4 h-4 text-primary/70" /> {message}
                   </div>
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-grow">
-                 <div className={`p-4 rounded-2xl border transition-all ${
-                   isCompleted 
-                    ? 'bg-accent/10 border-accent/20 text-accent-foreground' 
-                    : status === 'NOT_STARTED'
-                      ? 'bg-muted/50 border-border/50 text-muted-foreground'
-                      : status === 'EXPIRED'
-                        ? 'bg-primary/10 border-primary/20 text-primary-foreground bg-primary/20'
-                        : 'bg-primary/5 border-primary/10 text-primary'
-                 }`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2 font-bold text-sm">
-                        {isCompleted ? <CheckCircle className="w-4 h-4" /> : <Users className="w-4 h-4" />}
-                        {isCompleted ? "Tất cả đã nộp" : "Tiến độ nộp bài"}
-                      </div>
-                      <span className="text-lg font-black">{assignmentSubmissions.length} / {targetStudentsCount}</span>
+                 <div className="p-5 rounded-2xl border-none transition-all bg-accent/10 text-accent-foreground">
+                    <div className="flex items-center gap-2 font-bold text-sm mb-3">
+                      <CheckCircle className="w-5 h-5 opacity-80" /> 
+                      Tiến độ nộp bài
                     </div>
-                    {targetStudentsCount > 0 && (
-                      <div className="w-full bg-black/5 dark:bg-white/10 rounded-full h-1.5 overflow-hidden">
-                        <div 
-                          className={`h-full transition-all ${
-                            isCompleted 
-                              ? 'bg-accent' 
-                              : status === 'EXPIRED'
-                                ? 'bg-primary/40'
-                                : 'bg-primary'
-                          }`} 
-                          style={{ width: `${(assignmentSubmissions.length / targetStudentsCount) * 100}%` }}
-                        />
-                      </div>
-                    )}
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-2xl font-black">{assignmentSubmissions.length}</span>
+                      <span className="text-muted-foreground/60 font-bold">/ {targetStudentsCount}</span>
+                    </div>
                  </div>
               </CardContent>
-              <CardFooter className="bg-muted/30 p-4 flex justify-between items-center">
-                <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" className="rounded-xl hover:bg-primary/10 hover:text-primary" onClick={() => onEdit(assignment)} title="Chỉnh sửa">
+              <CardFooter className="bg-muted/30 p-3 flex justify-center border-t border-border/50">
+                <div className="flex items-center gap-2 w-full">
+                  <Button 
+                    variant="ghost" 
+                    className="flex-1 rounded-xl h-11 font-bold hover:bg-primary/10 hover:text-primary" 
+                    onClick={() => onViewReport(assignment)}
+                  >
+                    <Search className="mr-2 w-4 h-4" /> Báo cáo
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="rounded-xl h-11 w-11 hover:bg-primary/10 hover:text-primary" 
+                    onClick={() => onEdit(assignment)}
+                  >
                     <Pencil className="w-4 h-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="rounded-xl hover:bg-primary/10 hover:text-primary" onClick={() => onViewReport(assignment)} title="Báo cáo chi tiết">
-                    <PieChart className="w-4 h-4" />
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="rounded-xl h-11 w-11 text-muted-foreground hover:text-destructive hover:bg-destructive/10" 
+                    onClick={() => onDelete(assignment.id)}
+                  >
+                    <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl" onClick={() => onDelete(assignment.id)} title="Xóa bài tập">
-                  <Trash2 className="w-4 h-4" />
-                </Button>
               </CardFooter>
             </Card>
           )
