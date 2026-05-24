@@ -261,6 +261,8 @@ const MainApp: React.FC = () => {
               <AdminDashboard
                 users={users}
                 classes={classes}
+                assignments={assignments}
+                submissions={submissions}
                 onAddUser={async (u) => saveData(COLLECTIONS.USERS, u.id, u)}
                 onUpdateUser={async (u) => saveData(COLLECTIONS.USERS, u.id, u)}
                 onDeleteUser={handleDeleteUser}
