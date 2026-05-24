@@ -66,7 +66,8 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
     try {
       const updatedUser: User = {
         ...currentUser,
-        password: newPassword
+        password: newPassword,
+        passwordUpdatedAt: new Date().toISOString()
       };
       await onUpdateUser(updatedUser);
       toast({ description: 'Đã đổi mật khẩu thành công.' });

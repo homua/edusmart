@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -10,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Trash2, Upload, Download, UserPlus, Pencil, FileDown, ChevronDown, BarChart3, Users, BookOpen, CheckCircle2, Calendar, LayoutGrid, Search } from 'lucide-react';
+import { Plus, Trash2, Upload, Download, UserPlus, Pencil, FileDown, ChevronDown, BarChart3, Users, BookOpen, CheckCircle2, Calendar, LayoutGrid, Search, Copy, KeyRound, Clock } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -19,7 +20,8 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import * as XLSX from 'xlsx';
-import { subDays, isAfter, parseISO } from 'date-fns';
+import { subDays, isAfter, parseISO, format } from 'date-fns';
+import { vi } from 'date-fns/locale';
 
 interface AdminDashboardProps {
   users: User[];
@@ -95,6 +97,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       username,
       password,
       role,
+      passwordUpdatedAt: new Date().toISOString()
     };
     await onAddUser(newUser);
     toast({ description: 'Đã thêm người dùng mới.' });
@@ -119,17 +122,27 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       toast({ variant: 'destructive', description: 'Vui lòng điền đầy đủ thông tin.' });
       return;
     }
+
+    const isPasswordChanged = editPassword !== userToEdit.password;
+
     const updatedUser: User = {
       ...userToEdit,
       fullName: editFullName,
       username: editUsername,
       password: editPassword,
       role: editRole,
+      passwordUpdatedAt: isPasswordChanged ? new Date().toISOString() : userToEdit.passwordUpdatedAt
     };
     await onUpdateUser(updatedUser);
-    toast({ description: 'Đã cập nhật thông tin người dùng.' });
+    toast({ description: isPasswordChanged ? 'Đã cập nhật thông tin và mật khẩu mới.' : 'Đã cập nhật thông tin người dùng.' });
     setEditUserModalOpen(false);
     setUserToEdit(null);
+  };
+
+  const handleCopyCredentials = (user: User) => {
+    const text = `Họ tên: ${user.fullName}\nTài khoản: ${user.username}\nMật khẩu: ${user.password}`;
+    navigator.clipboard.writeText(text);
+    toast({ description: `Đã sao chép tài khoản của ${user.fullName}` });
   };
 
   const handleAddClass = async (e: React.FormEvent) => {
@@ -239,6 +252,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       'Họ và tên': t.fullName,
       'Tên đăng nhập': t.username,
       'Mật khẩu': t.password,
+      'Cập nhật mật khẩu cuối': t.passwordUpdatedAt ? format(parseISO(t.passwordUpdatedAt), "HH:mm, dd/MM/yyyy", { locale: vi }) : 'Chưa có',
       'Vai trò': 'Giáo viên'
     }));
     const ws = XLSX.utils.json_to_sheet(teachersToExport);
@@ -331,7 +345,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
         <div>
           <h1 className="text-3xl font-black text-foreground">Bảng điều khiển Quản trị viên</h1>
-          <p className="text-muted-foreground">Quản lý người dùng, lớp học và dữ liệu hệ thống.</p>
+          <p className="text-muted-foreground">Quản lý người dùng, lớp học và giám sát tài khoản hệ thống.</p>
         </div>
         <div className="flex items-center gap-2">
            <Button onClick={onExport} variant="outline" title="Xuất toàn bộ dữ liệu ra file Excel (.xlsx)" className="rounded-xl border-2">
@@ -359,8 +373,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <Card className="rounded-3xl shadow-lg shadow-primary/5 border-primary/10">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>Người dùng Hệ thống</CardTitle>
-                <CardDescription>{users.length} người dùng trong hệ thống.</CardDescription>
+                <CardTitle>Người dùng & Tài khoản</CardTitle>
+                <CardDescription>Quản trị viên có thể xem mật khẩu và cấp lại tài khoản khi người dùng quên.</CardDescription>
               </div>
               <Dialog open={isUserModalOpen} onOpenChange={setUserModalOpen}>
                 <DialogTrigger asChild>
@@ -378,7 +392,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         <Input placeholder="Tên đăng nhập" value={username} onChange={e => setUsername(e.target.value)} required className="rounded-xl h-12" />
                     </div>
                     <div className="space-y-2">
-                        <Label>Mật khẩu</Label>
+                        <Label>Mật khẩu mặc định</Label>
                         <Input type="password" placeholder="Mật khẩu" value={password} onChange={e => setPassword(e.target.value)} required className="rounded-xl h-12" />
                     </div>
                     <div className="space-y-2">
@@ -485,12 +499,23 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             <div className="min-w-0">
                                 <p className="font-black text-foreground truncate leading-tight text-lg">{user.fullName}</p>
                                 <p className="text-xs text-muted-foreground/70 truncate">@{user.username}</p>
+                                {user.passwordUpdatedAt && (
+                                  <p className="text-[10px] text-muted-foreground/60 flex items-center mt-1">
+                                    <Clock className="w-2.5 h-2.5 mr-1" />
+                                    MK cập nhật: {format(parseISO(user.passwordUpdatedAt), "HH:mm, dd/MM", { locale: vi })}
+                                  </p>
+                                )}
                             </div>
                           </div>
 
                           <div className="space-y-1 flex-1">
-                            <div className="text-[10px] uppercase font-black tracking-widest text-muted-foreground/60">Thông tin đăng nhập</div>
-                            <div className="bg-muted/50 p-2 rounded-xl text-xs flex justify-between items-center gap-4">
+                            <div className="text-[10px] uppercase font-black tracking-widest text-muted-foreground/60 flex justify-between">
+                              <span>Thông tin đăng nhập</span>
+                              <Button variant="ghost" size="icon" className="h-4 w-4" onClick={() => handleCopyCredentials(user)} title="Sao chép tài khoản">
+                                <Copy className="h-2.5 w-2.5" />
+                              </Button>
+                            </div>
+                            <div className="bg-muted/50 p-2 rounded-xl text-xs flex justify-between items-center gap-4 border border-border/30">
                                 <span className="font-mono text-foreground/80 truncate">TK: {user.username}</span>
                                 <span className="font-black text-primary flex-shrink-0">MK: {user.password}</span>
                             </div>
@@ -502,8 +527,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 size="sm" 
                                 onClick={() => handleOpenEditUserModal(user)} 
                                 className="flex-1 md:flex-none h-9 px-4 rounded-lg text-[10px] font-black uppercase tracking-tighter hover:bg-primary/10 hover:text-primary"
+                                title="Chỉnh sửa hoặc Cấp lại mật khẩu"
                             >
-                                <Pencil className="mr-1 h-3 w-3" /> Sửa
+                                <KeyRound className="mr-1 h-3 w-3" /> Cấp lại
                             </Button>
                             <Button 
                                 variant="ghost" 
@@ -566,12 +592,23 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             <div className="min-w-0">
                                 <p className="font-black text-foreground truncate leading-tight text-lg">{user.fullName}</p>
                                 <p className="text-xs text-muted-foreground/70 truncate">@{user.username}</p>
+                                {user.passwordUpdatedAt && (
+                                  <p className="text-[10px] text-muted-foreground/60 flex items-center mt-1">
+                                    <Clock className="w-2.5 h-2.5 mr-1" />
+                                    MK cập nhật: {format(parseISO(user.passwordUpdatedAt), "HH:mm, dd/MM/yyyy", { locale: vi })}
+                                  </p>
+                                )}
                             </div>
                           </div>
 
                           <div className="space-y-1 flex-1">
-                            <div className="text-[10px] uppercase font-black tracking-widest text-muted-foreground/60">Thông tin đăng nhập</div>
-                            <div className="bg-muted/50 p-2 rounded-xl text-xs flex justify-between items-center gap-4">
+                            <div className="text-[10px] uppercase font-black tracking-widest text-muted-foreground/60 flex justify-between">
+                              <span>Thông tin đăng nhập</span>
+                              <Button variant="ghost" size="icon" className="h-4 w-4" onClick={() => handleCopyCredentials(user)} title="Sao chép tài khoản">
+                                <Copy className="h-2.5 w-2.5" />
+                              </Button>
+                            </div>
+                            <div className="bg-muted/50 p-2 rounded-xl text-xs flex justify-between items-center gap-4 border border-border/30">
                                 <span className="font-mono text-foreground/80 truncate">TK: {user.username}</span>
                                 <span className="font-black text-primary flex-shrink-0">MK: {user.password}</span>
                             </div>
@@ -583,8 +620,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 size="sm" 
                                 onClick={() => handleOpenEditUserModal(user)} 
                                 className="flex-1 md:flex-none h-9 px-4 rounded-lg text-[10px] font-black uppercase tracking-tighter hover:bg-primary/10 hover:text-primary"
+                                title="Cấp lại mật khẩu cho giáo viên"
                             >
-                                <Pencil className="mr-1 h-3 w-3" /> Sửa
+                                <KeyRound className="mr-1 h-3 w-3" /> Cấp lại
                             </Button>
                             <Button 
                                 variant="ghost" 
@@ -883,7 +921,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* Edit User Modal */}
       <Dialog open={isEditUserModalOpen} onOpenChange={setEditUserModalOpen}>
         <DialogContent className="rounded-3xl">
-          <DialogHeader><DialogTitle>Chỉnh sửa người dùng</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Chỉnh sửa & Cấp lại tài khoản</DialogTitle></DialogHeader>
           <form onSubmit={handleUpdateUser} className="space-y-4 pt-4">
             <div className="space-y-2">
                 <Label>Họ và tên</Label>
@@ -894,8 +932,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <Input placeholder="Tên đăng nhập" value={editUsername} onChange={e => setEditUsername(e.target.value)} required className="rounded-xl h-12" />
             </div>
             <div className="space-y-2">
-                <Label>Mật khẩu</Label>
-                <Input type="text" placeholder="Mật khẩu" value={editPassword} onChange={e => setEditPassword(e.target.value)} className="rounded-xl h-12" />
+                <Label className="text-primary font-black flex items-center gap-2">
+                  <KeyRound className="w-4 h-4" /> Mật khẩu mới
+                </Label>
+                <Input type="text" placeholder="Nhập mật khẩu mới để cấp lại" value={editPassword} onChange={e => setEditPassword(e.target.value)} className="rounded-xl h-12 border-primary/30" />
+                <p className="text-[10px] text-muted-foreground italic">Thay đổi mật khẩu tại đây nếu người dùng quên.</p>
             </div>
             <div className="space-y-2">
                 <Label>Vai trò</Label>

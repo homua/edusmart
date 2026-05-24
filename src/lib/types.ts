@@ -12,6 +12,7 @@ export interface User {
   fullName: string;
   role: UserRole;
   classId?: string;
+  passwordUpdatedAt?: string; // ISO date string tracking password changes
 }
 
 export interface Class {
