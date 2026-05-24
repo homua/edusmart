@@ -34,9 +34,9 @@ export type GenerateQuestionsInput = z.infer<typeof GenerateQuestionsInputSchema
 const QuestionSchema = z.object({
     id: z.string().describe("A unique identifier for the question"),
     text: z.string().describe("The text content of the question."),
-    type: z.enum(['MULTIPLE_CHOICE', 'TEXT']).describe("The application type: MULTIPLE_CHOICE for objective, TEXT for subjective."),
-    options: z.array(z.string()).optional().describe("An array of possible answers for multiple-choice questions."),
-    correctAnswer: z.string().describe("The correct answer to the question."),
+    type: z.enum(['MULTIPLE_CHOICE', 'TEXT']).describe("The application type: MULTIPLE_CHOICE for objective/options based, TEXT for subjective/written answers."),
+    options: z.array(z.string()).optional().describe("An array of possible answers. MUST be omitted or empty for type 'TEXT'."),
+    correctAnswer: z.string().describe("The correct answer. For 'TEXT', provide a model answer."),
     points: z.number().describe("The number of points this question is worth.")
 });
 
@@ -55,18 +55,35 @@ const generateQuestionsPrompt = ai.definePrompt({
   prompt: `Bạn là một trợ lý chuyên gia thiết kế chương trình giảng dạy của Việt Nam.
 Nhiệm vụ: Tạo ra chính xác {{count}} câu hỏi cho bài tập "{{title}}" thuộc môn {{subject}} với độ khó {{difficulty}}.
 
-Yêu cầu cụ thể về dạng câu hỏi ({{questionType}}):
-1. Nếu là 'TEXT': Tạo câu hỏi Tự luận dài, yêu cầu học sinh phân tích hoặc giải thích. (type: 'TEXT', không cần options)
-2. Nếu là 'MCQ_4': Tạo câu hỏi Trắc nghiệm có 4 lựa chọn A, B, C, D. (type: 'MULTIPLE_CHOICE', options phải có 4 lựa chọn)
-3. Nếu là 'TRUE_FALSE': Tạo câu hỏi Trắc nghiệm Đúng/Sai. (type: 'MULTIPLE_CHOICE', options: ['Đúng', 'Sai'])
-4. Nếu là 'SHORT_ANSWER': Tạo câu hỏi yêu cầu trả lời ngắn gọn (1-2 từ hoặc 1 cụm từ). (type: 'TEXT', không cần options)
-5. Nếu là 'ALL_MCQ': Hãy tạo một mảng hỗn hợp bao gồm cả Trắc nghiệm 4 đáp án, Đúng/Sai và Trả lời ngắn.
+QUY TẮC BẮT BUỘC về dạng câu hỏi (Dựa trên yêu cầu: {{questionType}}):
 
-Quy tắc:
-- Mức điểm phù hợp: 0.25, 0.5, 1, 2, 3, 4, 5 dựa trên độ khó của từng câu.
+1. NẾU yêu cầu là 'TEXT' (Tự luận):
+   - Bạn PHẢI đặt "type": "TEXT".
+   - Bạn KHÔNG ĐƯỢC cung cấp trường "options" (hoặc để mảng rỗng).
+   - "correctAnswer" phải là một đoạn văn mẫu trả lời chi tiết.
+
+2. NẾU yêu cầu là 'MCQ_4' (Trắc nghiệm 4 đáp án):
+   - Bạn PHẢI đặt "type": "MULTIPLE_CHOICE".
+   - Trường "options" PHẢI có đúng 4 lựa chọn (A, B, C, D).
+
+3. NẾU yêu cầu là 'TRUE_FALSE' (Đúng/Sai):
+   - Bạn PHẢI đặt "type": "MULTIPLE_CHOICE".
+   - Trường "options" PHẢI chỉ có 2 lựa chọn: ["Đúng", "Sai"].
+
+4. NẾU yêu cầu là 'SHORT_ANSWER' (Trả lời ngắn):
+   - Bạn PHẢI đặt "type": "TEXT".
+   - Bạn KHÔNG ĐƯỢC cung cấp trường "options".
+   - "correctAnswer" là từ hoặc cụm từ ngắn gọn.
+
+5. NẾU yêu cầu là 'ALL_MCQ' (Tổng hợp trắc nghiệm):
+   - Tạo hỗn hợp các dạng MCQ_4, TRUE_FALSE. 
+   - KHÔNG tạo câu hỏi tự luận dài trong phần này.
+
+Quy tắc chung:
+- Mức điểm phù hợp: 0.25, 0.5, 1, 2, 3, 4, 5 dựa trên độ khó.
 - Ngôn ngữ: Tiếng Việt chuẩn, văn phong sư phạm.
 - ID: 'q_' + một chuỗi ngẫu nhiên.
-- Luôn trả về dữ liệu dưới dạng mảng JSON các đối tượng câu hỏi theo đúng cấu trúc schema yêu cầu.`,
+- Luôn trả về dữ liệu dưới dạng mảng JSON.`,
 });
 
 const generateQuestionsFlow = ai.defineFlow(
@@ -80,10 +97,15 @@ const generateQuestionsFlow = ai.defineFlow(
     if (!output) {
       throw new Error("AI không tạo được câu hỏi. Hãy thử lại với tiêu đề hoặc môn học rõ ràng hơn.");
     }
-    // Đảm bảo ID luôn duy nhất bằng cách thêm timestamp vào kết quả AI
-    return output.map(q => ({
-      ...q, 
-      id: `q_${Date.now()}_${Math.random().toString(36).substring(2, 9)}` 
-    }));
+    // Đảm bảo dữ liệu nhất quán sau khi nhận từ AI
+    return output.map(q => {
+      const isText = input.questionType === 'TEXT' || q.type === 'TEXT';
+      return {
+        ...q, 
+        id: `q_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        type: isText ? 'TEXT' : 'MULTIPLE_CHOICE',
+        options: isText ? [] : (q.options || [])
+      };
+    });
   }
 );

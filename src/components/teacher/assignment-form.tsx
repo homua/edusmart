@@ -125,7 +125,7 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
         title: title,
         subject: subject,
         difficulty: aiDifficulty,
-        questionType: aiQuestionType as any,
+        questionType: (aiCategory === 'TEXT' ? 'TEXT' : aiQuestionType) as any,
         count: aiQuestionCount,
       };
       const newQuestions = await generateQuestionsAI(input);
@@ -135,9 +135,11 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
       }
 
       // Map generated questions back to our app's internal QuestionType
+      // And ensure that if aiCategory is TEXT, we force the type to TEXT
       const mappedQuestions: Question[] = newQuestions.map(q => ({
           ...q,
-          type: q.type as QuestionType
+          type: (aiCategory === 'TEXT' ? QuestionType.TEXT : q.type) as QuestionType,
+          options: aiCategory === 'TEXT' ? [] : (q.options || [])
       }));
       setQuestions(prev => [...prev, ...mappedQuestions]);
       toast({ 
