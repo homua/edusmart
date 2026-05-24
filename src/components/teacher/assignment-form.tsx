@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -18,7 +19,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 interface AssignmentFormProps {
   teacherId: string;
   classes: Class[];
-  onSave: (assignment: Assignment) => Promise<void>;
+  onSave: (assignment: Assignment) => void;
   onCancel: () => void;
   assignmentToEdit?: Assignment | null;
 }
@@ -79,7 +80,7 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
     return isNaN(date.getTime()) ? null : date.toISOString();
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!title || !subject || classIds.length === 0 || questions.length === 0) {
       toast({ variant: 'destructive', description: 'Vui lòng điền nội dung bài tập, môn học, chọn lớp và thêm ít nhất một câu hỏi.' });
       return;
@@ -100,12 +101,8 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
       endDate: formattedEndDate,
     };
     
-    try {
-      await onSave(assignmentData);
-      toast({ title: "Thành công!", description: assignmentToEdit ? "Đã cập nhật bài tập." : "Đã tạo bài tập mới." });
-    } catch (error) {
-      // Errors are handled by the non-blocking infrastructure
-    }
+    onSave(assignmentData);
+    toast({ title: "Thành công!", description: assignmentToEdit ? "Đã cập nhật bài tập." : "Đã tạo bài tập mới." });
   };
   
   const handleGenerateQuestions = async () => {

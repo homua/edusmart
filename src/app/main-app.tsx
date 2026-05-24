@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -43,7 +44,6 @@ const MainApp: React.FC = () => {
   const { data: assignmentsData, isLoading: assignmentsLoading } = useCollection<Assignment>(assignmentsCollection);
   const { data: submissionsData, isLoading: submissionsLoading } = useCollection<Submission>(submissionsCollection);
   
-  // Sort users alphabetically by the last word of fullName (First Name in Vietnamese context)
   const users = useMemo(() => {
     if (!usersData) return [];
     return [...usersData].sort((a, b) => {
@@ -53,13 +53,11 @@ const MainApp: React.FC = () => {
     });
   }, [usersData]);
 
-  // Sort classes by name numerically (e.g., 6A1, 6A2, 6A10)
   const classes = useMemo(() => {
     if (!classesData) return [];
     return [...classesData].sort((a, b) => a.name.localeCompare(b.name, 'vi', { numeric: true }));
   }, [classesData]);
 
-  // Sort assignments by creation date (newest first)
   const assignments = useMemo(() => {
     if (!assignmentsData) return [];
     return [...assignmentsData].sort((a, b) => {
@@ -92,13 +90,12 @@ const MainApp: React.FC = () => {
     }
   }, [auth]);
   
-  const saveData = useCallback(async (collectionName: string, id: string, data: any) => {
+  const saveData = useCallback((collectionName: string, id: string, data: any) => {
     if (!firestore) return;
     const docRef = doc(firestore, collectionName, id);
-    return setDocumentNonBlocking(docRef, data, { merge: true });
+    setDocumentNonBlocking(docRef, data, { merge: true });
   }, [firestore]);
 
-  // Initial Admin creation - only if needed and not already creating
   useEffect(() => {
     if (!usersLoading && !isAuthUserLoading && authUser && firestore && users.length === 0 && isInitialLoad) {
       const adminId = authUser.uid;
@@ -324,8 +321,8 @@ const MainApp: React.FC = () => {
                   teacherId={currentUser.id}
                   classes={classes}
                   assignmentToEdit={currentAssignment}
-                  onSave={async (a) => {
-                    await saveData(COLLECTIONS.ASSIGNMENTS, a.id, a);
+                  onSave={(a) => {
+                    saveData(COLLECTIONS.ASSIGNMENTS, a.id, a);
                     navigate('TEACHER_DASHBOARD');
                   }}
                   onCancel={() => navigate('TEACHER_DASHBOARD')}
@@ -387,8 +384,8 @@ const MainApp: React.FC = () => {
                   assignment={currentAssignment}
                   studentId={currentUser.id}
                   studentName={currentUser.fullName}
-                  onSubmit={async (s) => {
-                    await saveData(COLLECTIONS.SUBMISSIONS, s.id, s);
+                  onSubmit={(s) => {
+                    saveData(COLLECTIONS.SUBMISSIONS, s.id, s);
                     navigate('STUDENT_PORTAL');
                   }}
                   onCancel={() => navigate('STUDENT_PORTAL')}

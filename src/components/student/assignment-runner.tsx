@@ -17,7 +17,7 @@ interface AssignmentRunnerProps {
   assignment: Assignment;
   studentId: string;
   studentName: string;
-  onSubmit: (submission: Submission) => Promise<void>;
+  onSubmit: (submission: Submission) => void;
   onCancel: () => void;
 }
 
@@ -34,6 +34,17 @@ const AssignmentRunner: React.FC<AssignmentRunnerProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const totalQuestions = assignment.questions.length;
+  
+  // Safety check for empty assignments
+  if (totalQuestions === 0) {
+    return (
+      <div className="text-center py-20 space-y-4">
+        <p className="text-muted-foreground">Bài tập này hiện không có câu hỏi nào.</p>
+        <Button onClick={onCancel} variant="outline" className="rounded-xl">Quay lại</Button>
+      </div>
+    );
+  }
+
   const currentQuestion = assignment.questions[currentQuestionIndex];
 
   const handleAnswerChange = (questionId: string, answer: string) => {
@@ -52,10 +63,12 @@ const AssignmentRunner: React.FC<AssignmentRunnerProps> = ({
     }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (isSubmitting) return;
 
-    if (Object.keys(answers).length < totalQuestions) {
+    // Validation: Check if all questions are answered
+    const answeredCount = Object.keys(answers).filter(key => answers[key].trim() !== '').length;
+    if (answeredCount < totalQuestions) {
       if (!window.confirm("Bạn chưa trả lời hết các câu hỏi. Bạn có chắc chắn muốn nộp bài không?")) {
         return;
       }
@@ -63,42 +76,38 @@ const AssignmentRunner: React.FC<AssignmentRunnerProps> = ({
 
     setIsSubmitting(true);
     
-    try {
-      let score = 0;
-      const submissionAnswers = assignment.questions.map(q => {
-        const studentAnswer = answers[q.id] || '';
-        // Basic grading
-        if (studentAnswer.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase()) {
-          score += q.points;
-        }
-        return { questionId: q.id, answer: studentAnswer };
-      });
+    let score = 0;
+    const submissionAnswers = assignment.questions.map(q => {
+      const studentAnswer = answers[q.id] || '';
+      // Basic grading for objective/short answer questions
+      if (studentAnswer.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase()) {
+        score += q.points;
+      }
+      return { questionId: q.id, answer: studentAnswer };
+    });
 
-      const submissionId = `sub_${assignment.id}_${studentId}`;
-      const newSubmission: Submission = {
-        id: submissionId,
-        assignmentId: assignment.id,
-        studentId,
-        studentName,
-        answers: submissionAnswers,
-        score: parseFloat(score.toFixed(2)),
-        isGraded: true,
-        submittedAt: new Date().toISOString(),
-      };
+    const submissionId = `sub_${assignment.id}_${studentId}`;
+    const newSubmission: Submission = {
+      id: submissionId,
+      assignmentId: assignment.id,
+      studentId,
+      studentName,
+      answers: submissionAnswers,
+      score: parseFloat(score.toFixed(2)),
+      isGraded: true,
+      submittedAt: new Date().toISOString(),
+    };
 
-      await onSubmit(newSubmission);
-      
-      toast({ 
-        title: 'Nộp bài thành công!', 
-        description: `Bạn đã hoàn thành bài tập. Điểm số: ${newSubmission.score}` 
-      });
-    } catch (error) {
-      // Error is already emitted by non-blocking-updates, but we need to reset state
-      setIsSubmitting(false);
-    }
+    // Non-blocking submission: UI navigates immediately
+    onSubmit(newSubmission);
+    
+    toast({ 
+      title: 'Đang xử lý nộp bài...', 
+      description: 'Hệ thống đang lưu kết quả của bạn.' 
+    });
   };
   
-  const progress = ((currentQuestionIndex + 1) / totalQuestions) * 100;
+  const progress = totalQuestions > 0 ? ((currentQuestionIndex + 1) / totalQuestions) * 100 : 0;
 
   // Determine if it's an objective question with options or a fill-in-the-blank/essay
   const isObjectiveWithOptions = currentQuestion.type === 'MULTIPLE_CHOICE' && currentQuestion.options && currentQuestion.options.length > 0;
@@ -124,7 +133,7 @@ const AssignmentRunner: React.FC<AssignmentRunnerProps> = ({
         <CardContent>
           {isObjectiveWithOptions ? (
             <RadioGroup
-              value={answers[currentQuestion.id]}
+              value={answers[currentQuestion.id] || ''}
               onValueChange={(val) => handleAnswerChange(currentQuestion.id, val)}
               className="grid gap-3"
             >
