@@ -194,7 +194,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                     : status === 'NOT_STARTED'
                       ? 'bg-muted/50 border-border/50 text-muted-foreground'
                       : status === 'EXPIRED'
-                        ? 'bg-destructive/5 border-destructive/10 text-destructive'
+                        ? 'bg-primary/10 border-primary/20 text-primary-foreground bg-primary/20'
                         : 'bg-primary/5 border-primary/10 text-primary'
                  }`}>
                     <div className="flex items-center justify-between mb-2">
@@ -211,7 +211,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                             isCompleted 
                               ? 'bg-accent' 
                               : status === 'EXPIRED'
-                                ? 'bg-destructive'
+                                ? 'bg-primary/40'
                                 : 'bg-primary'
                           }`} 
                           style={{ width: `${(assignmentSubmissions.length / targetStudentsCount) * 100}%` }}
