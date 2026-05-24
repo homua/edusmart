@@ -180,7 +180,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const getTeachersText = (ids: string[]) => {
     if (!ids || ids.length === 0) return "Chưa gán";
-    return ids.map(id => users.find(u => u.id === id)?.fullName || 'Không xác định').join(', ');
+    return ids
+      .map(id => users.find(u => u.id === id)?.fullName || 'Không xác định')
+      .sort((a, b) => a.localeCompare(b, 'vi'))
+      .join(', ');
   };
 
   const handleToggleTeacherSelection = (teacherId: string) => {

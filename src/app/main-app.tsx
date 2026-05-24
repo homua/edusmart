@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useUser, useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, doc, writeBatch } from 'firebase/firestore';
 import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
@@ -44,8 +44,18 @@ const MainApp: React.FC = () => {
   const { data: assignmentsData, isLoading: assignmentsLoading } = useCollection<Assignment>(assignmentsCollection);
   const { data: submissionsData, isLoading: submissionsLoading } = useCollection<Submission>(submissionsCollection);
   
-  const users = usersData || [];
-  const classes = classesData || [];
+  // Sort users alphabetically by fullName
+  const users = useMemo(() => {
+    if (!usersData) return [];
+    return [...usersData].sort((a, b) => a.fullName.localeCompare(b.fullName, 'vi'));
+  }, [usersData]);
+
+  // Sort classes by name numerically (e.g., 6A1, 6A2, 6A10)
+  const classes = useMemo(() => {
+    if (!classesData) return [];
+    return [...classesData].sort((a, b) => a.name.localeCompare(b.name, 'vi', { numeric: true }));
+  }, [classesData]);
+
   const assignments = assignmentsData || [];
   const submissions = submissionsData || [];
 
