@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -11,12 +10,13 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Trash2, Upload, Download, UserPlus, Pencil, FileDown, ChevronDown, BarChart3, Users, BookOpen, CheckCircle2, Calendar } from 'lucide-react';
+import { Plus, Trash2, Upload, Download, UserPlus, Pencil, FileDown, ChevronDown, BarChart3, Users, BookOpen, CheckCircle2, Calendar, LayoutGrid } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
 import * as XLSX from 'xlsx';
 import { subDays, isAfter, parseISO } from 'date-fns';
 
@@ -57,32 +57,26 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [isClassModalOpen, setClassModalOpen] = useState(false);
   const [isClassEditModalOpen, setClassEditModalOpen] = useState(false);
 
-  // Stats time range filter
   const [timeRange, setTimeRange] = useState<'all' | 'month' | 'week'>('all');
 
-  // User form state
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>(UserRole.STUDENT);
 
-  // Edit User state
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
   const [editFullName, setEditFullName] = useState('');
   const [editUsername, setEditUsername] = useState('');
   const [editPassword, setEditPassword] = useState('');
   const [editRole, setEditRole] = useState<UserRole>(UserRole.STUDENT);
 
-  // Class form state
   const [className, setClassName] = useState('');
   const [teacherIds, setTeacherIds] = useState<string[]>([]);
 
-  // Edit Class state
   const [classToEdit, setClassToEdit] = useState<Class | null>(null);
   const [editClassName, setEditClassName] = useState('');
   const [editTeacherIds, setEditTeacherIds] = useState<string[]>([]);
 
-  // Selection states
   const [selectedClassId, setSelectedClassId] = useState<string>('');
   const [selectedTeachers, setSelectedTeachers] = useState<string[]>([]);
   const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
@@ -256,7 +250,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const currentStudentList = selectedClassId ? (selectedClassId === 'unassigned' ? unassignedStudents : studentsByClass[selectedClassId] || []) : [];
 
-  // Statistics Calculation with time filtering
   const statsData = useMemo(() => {
     const now = new Date();
     const cutoffDate = timeRange === 'month' ? subDays(now, 30) : timeRange === 'week' ? subDays(now, 7) : null;
@@ -306,6 +299,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const { teacherStats, classStats } = statsData;
 
+  const currentClass = classes.find(c => c.id === selectedClassId);
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
@@ -330,162 +325,203 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       <Tabs defaultValue="users" className="w-full">
         <TabsList className="grid w-full grid-cols-3 mb-8">
-          <TabsTrigger value="users" className="py-3 text-base font-bold">Quản lý Người dùng</TabsTrigger>
-          <TabsTrigger value="classes" className="py-3 text-base font-bold">Quản lý Lớp học</TabsTrigger>
-          <TabsTrigger value="stats" className="py-3 text-base font-bold">Thống kê & Báo cáo</TabsTrigger>
+          <TabsTrigger value="users" className="py-3 text-base font-bold uppercase tracking-tight">Quản lý Người dùng</TabsTrigger>
+          <TabsTrigger value="classes" className="py-3 text-base font-bold uppercase tracking-tight">Quản lý Lớp học</TabsTrigger>
+          <TabsTrigger value="stats" className="py-3 text-base font-bold uppercase tracking-tight">Thống kê & Báo cáo</TabsTrigger>
         </TabsList>
 
         <TabsContent value="users">
-          <Card className="rounded-3xl shadow-lg shadow-primary/5">
+          <Card className="rounded-3xl shadow-lg shadow-primary/5 border-primary/10">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Người dùng Hệ thống</CardTitle>
-                <CardDescription>{users.length} người dùng đang hoạt động.</CardDescription>
+                <CardDescription>{users.length} người dùng trong hệ thống.</CardDescription>
               </div>
               <Dialog open={isUserModalOpen} onOpenChange={setUserModalOpen}>
                 <DialogTrigger asChild>
-                  <Button size="icon" className="rounded-full"><UserPlus /></Button>
+                  <Button size="icon" className="rounded-full h-12 w-12 shadow-lg shadow-primary/20"><UserPlus /></Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader><DialogTitle>Thêm người dùng mới</DialogTitle></DialogHeader>
                   <form onSubmit={handleAddUser} className="space-y-4">
-                    <Input placeholder="Họ và tên" value={fullName} onChange={e => setFullName(e.target.value)} required />
-                    <Input placeholder="Tên đăng nhập" value={username} onChange={e => setUsername(e.target.value)} required />
-                    <Input type="password" placeholder="Mật khẩu" value={password} onChange={e => setPassword(e.target.value)} required />
+                    <Input placeholder="Họ và tên" value={fullName} onChange={e => setFullName(e.target.value)} required className="rounded-xl h-12" />
+                    <Input placeholder="Tên đăng nhập" value={username} onChange={e => setUsername(e.target.value)} required className="rounded-xl h-12" />
+                    <Input type="password" placeholder="Mật khẩu" value={password} onChange={e => setPassword(e.target.value)} required className="rounded-xl h-12" />
                     <Select onValueChange={(v) => setRole(v as UserRole)} defaultValue={role}>
-                      <SelectTrigger><SelectValue placeholder="Chọn vai trò" /></SelectTrigger>
+                      <SelectTrigger className="rounded-xl h-12"><SelectValue placeholder="Chọn vai trò" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value={UserRole.ADMIN}>Quản trị viên</SelectItem>
                         <SelectItem value={UserRole.TEACHER}>Giáo viên</SelectItem>
                         <SelectItem value={UserRole.STUDENT}>Học sinh</SelectItem>
                       </SelectContent>
                     </Select>
-                    <Button type="submit" className="w-full">Thêm người dùng</Button>
+                    <Button type="submit" className="w-full h-12 rounded-xl font-bold">Thêm người dùng</Button>
                   </form>
                 </DialogContent>
               </Dialog>
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="students" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="students">Học sinh</TabsTrigger>
-                  <TabsTrigger value="teachers">Giáo viên</TabsTrigger>
-                  <TabsTrigger value="admins">Quản trị viên</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-3 bg-muted/50 p-1 rounded-2xl">
+                  <TabsTrigger value="students" className="rounded-xl font-bold">Học sinh</TabsTrigger>
+                  <TabsTrigger value="teachers" className="rounded-xl font-bold">Giáo viên</TabsTrigger>
+                  <TabsTrigger value="admins" className="rounded-xl font-bold">Quản trị viên</TabsTrigger>
                 </TabsList>
-                <TabsContent value="students" className="mt-4 space-y-4">
-                  <Select value={selectedClassId} onValueChange={setSelectedClassId}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Chọn một lớp..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {classes.map((cls) => (
-                        <SelectItem key={cls.id} value={cls.id}>
-                          {cls.name} ({studentsByClass[cls.id]?.length || 0} học sinh)
-                        </SelectItem>
-                      ))}
-                      {(unassignedStudents.length > 0 || classes.length === 0) && (
-                         <SelectItem value="unassigned">
-                           Chưa phân lớp ({unassignedStudents.length} học sinh)
-                         </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                  <div className="flex items-center justify-end gap-2">
-                      {selectedStudents.length > 0 && (
+                <TabsContent value="students" className="mt-6 space-y-6">
+                  <div className="flex flex-col md:flex-row gap-4 items-end">
+                    <div className="flex-1 space-y-2">
+                        <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Lọc theo lớp (Mũi tên sổ xuống)</Label>
+                        <Select value={selectedClassId} onValueChange={setSelectedClassId}>
+                            <SelectTrigger className="w-full h-14 rounded-2xl border-2 border-primary/10 focus:border-primary transition-all px-6 text-lg font-bold bg-background">
+                            <div className="flex justify-between items-center w-full pr-4">
+                                <SelectValue placeholder="Chọn một lớp..." />
+                                <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-black px-2 py-0.5 rounded-full ml-4">
+                                    {selectedClassId === 'unassigned' ? unassignedStudents.length : (studentsByClass[selectedClassId]?.length || 0)} HS
+                                </Badge>
+                            </div>
+                            </SelectTrigger>
+                            <SelectContent className="rounded-2xl border-primary/10 shadow-xl">
+                            {classes.map((cls) => (
+                                <SelectItem key={cls.id} value={cls.id} className="rounded-xl py-3 focus:bg-primary/5">
+                                <div className="flex items-center justify-between w-full min-w-[200px]">
+                                    <span className="font-bold">{cls.name}</span>
+                                    <span className="text-xs text-muted-foreground ml-4">({studentsByClass[cls.id]?.length || 0} học sinh)</span>
+                                </div>
+                                </SelectItem>
+                            ))}
+                            {(unassignedStudents.length > 0 || classes.length === 0) && (
+                                <SelectItem value="unassigned" className="rounded-xl py-3 focus:bg-primary/5">
+                                <div className="flex items-center justify-between w-full min-w-[200px]">
+                                    <span className="font-bold">Chưa phân lớp</span>
+                                    <span className="text-xs text-muted-foreground ml-4">({unassignedStudents.length} học sinh)</span>
+                                </div>
+                                </SelectItem>
+                            )}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    {selectedStudents.length > 0 && (
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="destructive">
-                              <Trash2 className="mr-2 h-4 w-4" />
+                            <Button variant="destructive" className="h-14 rounded-2xl px-6 font-bold">
+                              <Trash2 className="mr-2 h-5 w-5" />
                               Xóa đã chọn ({selectedStudents.length})
                             </Button>
                           </AlertDialogTrigger>
-                          <AlertDialogContent>
+                          <AlertDialogContent className="rounded-3xl">
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Bạn chắc chắn muốn xóa {selectedStudents.length} học sinh đã chọn?</AlertDialogTitle>
+                              <AlertDialogTitle>Xác nhận xóa học sinh</AlertDialogTitle>
+                              <AlertDialogDescription>Bạn chắc chắn muốn xóa {selectedStudents.length} học sinh đã chọn khỏi hệ thống? Thao tác này không thể hoàn tác.</AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>Hủy</AlertDialogCancel>
-                              <AlertDialogAction onClick={handleBulkDeleteStudents} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Xóa</AlertDialogAction>
+                              <AlertDialogCancel className="rounded-xl">Hủy</AlertDialogCancel>
+                              <AlertDialogAction onClick={handleBulkDeleteStudents} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl">Xóa vĩnh viễn</AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
                       )}
                   </div>
-                  <Table>
-                      <TableHeader>
-                          <TableRow>
-                              <TableHead className="w-12"><Checkbox checked={selectedStudents.length > 0 && currentStudentList.length > 0 && selectedStudents.length === currentStudentList.length} onCheckedChange={(checked) => setSelectedStudents(checked ? currentStudentList.map((s) => s.id) : [])}/></TableHead>
-                              <TableHead>Học sinh</TableHead>
-                              <TableHead className="text-right">Hành động</TableHead>
-                          </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                          {currentStudentList.map(user => (
-                              <TableRow key={user.id} data-state={selectedStudents.includes(user.id) ? 'selected' : ''}>
-                                  <TableCell><Checkbox checked={selectedStudents.includes(user.id)} onCheckedChange={() => handleToggleStudentSelection(user.id)}/></TableCell>
-                                  <TableCell>
-                                      <div className="font-medium">{user.fullName}</div>
-                                      <div className="text-xs text-muted-foreground">@{user.username} | {user.password}</div>
-                                  </TableCell>
-                                  <TableCell className="text-right">
-                                      <div className="flex items-center justify-end gap-2">
-                                          <Button variant="ghost" size="icon" onClick={() => handleOpenEditUserModal(user)} className="rounded-full"><Pencil className="h-4 w-4" /></Button>
-                                          <Button variant="ghost" size="icon" onClick={() => onDeleteUser(user)} className="text-destructive hover:bg-destructive/10 rounded-full"><Trash2 className="h-4 w-4" /></Button>
-                                      </div>
-                                  </TableCell>
-                              </TableRow>
-                          ))}
-                      </TableBody>
-                  </Table>
-                </TabsContent>
-                <TabsContent value="teachers" className="mt-4 space-y-4">
-                   <div className="flex items-center justify-between gap-2">
-                      <Button variant="outline" size="sm" onClick={handleExportTeachersExcel}><FileDown className="mr-2 h-4 w-4" /> Xuất danh sách GV</Button>
-                      {selectedTeachers.length > 0 && <Button variant="destructive" size="sm" onClick={handleBulkDeleteTeachers}><Trash2 className="mr-2 h-4 w-4" /> Xóa ({selectedTeachers.length})</Button>}
-                    </div>
+                  
+                  <div className="rounded-2xl border border-border/50 overflow-hidden bg-card/50">
                     <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-12"><Checkbox checked={selectedTeachers.length > 0 && selectedTeachers.length === allTeachers.length} onCheckedChange={(checked) => setSelectedTeachers(checked ? allTeachers.map(t => t.id) : [])}/></TableHead>
-                                <TableHead>Giáo viên</TableHead>
-                                <TableHead className="text-right">Hành động</TableHead>
+                        <TableHeader className="bg-muted/30">
+                            <TableRow className="hover:bg-transparent border-b-2">
+                                <TableHead className="w-12 px-6"><Checkbox checked={selectedStudents.length > 0 && currentStudentList.length > 0 && selectedStudents.length === currentStudentList.length} onCheckedChange={(checked) => setSelectedStudents(checked ? currentStudentList.map((s) => s.id) : [])}/></TableHead>
+                                <TableHead className="font-black uppercase tracking-widest text-[10px] text-muted-foreground px-6 py-4">Số lượng học sinh dạng mũi tên sổ xuống</TableHead>
+                                <TableHead className="font-black uppercase tracking-widest text-[10px] text-muted-foreground px-6 py-4 text-right">Hành động</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {allTeachers.map(user => (
-                            <TableRow key={user.id}>
-                               <TableCell><Checkbox checked={selectedTeachers.includes(user.id)} onCheckedChange={() => handleToggleTeacherSelection(user.id)} /></TableCell>
-                              <TableCell>
-                                <div className="font-medium">{user.fullName}</div>
-                                <div className="text-xs text-muted-foreground">@{user.username} | {user.password}</div>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                  <div className="flex items-center justify-end gap-2">
-                                      <Button variant="ghost" size="icon" onClick={() => handleOpenEditUserModal(user)} className="rounded-full"><Pencil className="h-4 w-4" /></Button>
-                                      <Button variant="ghost" size="icon" onClick={() => onDeleteUser(user)} className="text-destructive hover:bg-destructive/10 rounded-full"><Trash2 className="h-4 w-4" /></Button>
-                                  </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
+                            {currentStudentList.map(user => (
+                                <TableRow key={user.id} data-state={selectedStudents.includes(user.id) ? 'selected' : ''} className="hover:bg-primary/5 transition-colors">
+                                    <TableCell className="px-6"><Checkbox checked={selectedStudents.includes(user.id)} onCheckedChange={() => handleToggleStudentSelection(user.id)}/></TableCell>
+                                    <TableCell className="px-6 py-4">
+                                        <div className="font-bold text-lg text-foreground">{user.fullName}</div>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <span className="text-xs font-medium text-muted-foreground/70 bg-muted px-2 py-0.5 rounded-md">@{user.username}</span>
+                                            <span className="text-xs font-medium text-muted-foreground/70 bg-muted px-2 py-0.5 rounded-md">Mật khẩu: <b className="text-foreground">{user.password}</b></span>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="px-6 py-4 text-right">
+                                        <div className="flex items-center justify-end gap-2">
+                                            <Button variant="ghost" size="icon" onClick={() => handleOpenEditUserModal(user)} className="rounded-full hover:bg-primary/10 hover:text-primary"><Pencil className="h-4 w-4" /></Button>
+                                            <Button variant="ghost" size="icon" onClick={() => onDeleteUser(user)} className="text-destructive hover:bg-destructive/10 rounded-full"><Trash2 className="h-4 w-4" /></Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                            {currentStudentList.length === 0 && (
+                                <TableRow>
+                                    <TableCell colSpan={3} className="text-center py-20 text-muted-foreground italic">Không có học sinh nào trong mục này.</TableCell>
+                                </TableRow>
+                            )}
                         </TableBody>
-                      </Table>
+                    </Table>
+                  </div>
                 </TabsContent>
-                <TabsContent value="admins" className="mt-4">
-                  <Table>
-                    <TableBody>
-                      {admins.map(user => (
-                        <TableRow key={user.id}>
-                          <TableCell>
-                            <div className="font-medium">{user.fullName}</div>
-                            <div className="text-xs text-muted-foreground">@{user.username}</div>
-                          </TableCell>
-                          <TableCell className="text-right">
-                             <Button variant="ghost" size="icon" onClick={() => handleOpenEditUserModal(user)} className="rounded-full"><Pencil className="h-4 w-4" /></Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                
+                <TabsContent value="teachers" className="mt-6 space-y-4">
+                   <div className="flex items-center justify-between gap-2">
+                      <Button variant="outline" size="sm" onClick={handleExportTeachersExcel} className="rounded-xl h-10 px-4 font-bold border-2"><FileDown className="mr-2 h-4 w-4" /> Xuất danh sách GV</Button>
+                      {selectedTeachers.length > 0 && <Button variant="destructive" size="sm" onClick={handleBulkDeleteTeachers} className="rounded-xl h-10 px-4 font-bold"><Trash2 className="mr-2 h-4 w-4" /> Xóa đã chọn ({selectedTeachers.length})</Button>}
+                    </div>
+                    <div className="rounded-2xl border border-border/50 overflow-hidden bg-card/50">
+                        <Table>
+                            <TableHeader className="bg-muted/30">
+                                <TableRow className="hover:bg-transparent">
+                                    <TableHead className="w-12 px-6"><Checkbox checked={selectedTeachers.length > 0 && selectedTeachers.length === allTeachers.length} onCheckedChange={(checked) => setSelectedTeachers(checked ? allTeachers.map(t => t.id) : [])}/></TableHead>
+                                    <TableHead className="font-black uppercase tracking-widest text-[10px] text-muted-foreground px-6">Giáo viên</TableHead>
+                                    <TableHead className="font-black uppercase tracking-widest text-[10px] text-muted-foreground px-6 text-right">Hành động</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                            {allTeachers.map(user => (
+                                <TableRow key={user.id} className="hover:bg-primary/5 transition-colors">
+                                <TableCell className="px-6"><Checkbox checked={selectedTeachers.includes(user.id)} onCheckedChange={() => handleToggleTeacherSelection(user.id)} /></TableCell>
+                                <TableCell className="px-6 py-4">
+                                    <div className="font-bold text-lg">{user.fullName}</div>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-xs font-medium text-muted-foreground/70 bg-muted px-2 py-0.5 rounded-md">@{user.username}</span>
+                                        <span className="text-xs font-medium text-muted-foreground/70 bg-muted px-2 py-0.5 rounded-md">Mật khẩu: <b className="text-foreground">{user.password}</b></span>
+                                    </div>
+                                </TableCell>
+                                <TableCell className="px-6 py-4 text-right">
+                                    <div className="flex items-center justify-end gap-2">
+                                        <Button variant="ghost" size="icon" onClick={() => handleOpenEditUserModal(user)} className="rounded-full hover:bg-primary/10 hover:text-primary"><Pencil className="h-4 w-4" /></Button>
+                                        <Button variant="ghost" size="icon" onClick={() => onDeleteUser(user)} className="text-destructive hover:bg-destructive/10 rounded-full"><Trash2 className="h-4 w-4" /></Button>
+                                    </div>
+                                </TableCell>
+                                </TableRow>
+                            ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </TabsContent>
+                
+                <TabsContent value="admins" className="mt-6">
+                  <div className="rounded-2xl border border-border/50 overflow-hidden bg-card/50">
+                    <Table>
+                        <TableHeader className="bg-muted/30">
+                            <TableRow>
+                                <TableHead className="px-6 py-4 font-black uppercase tracking-widest text-[10px] text-muted-foreground">Tên quản trị viên</TableHead>
+                                <TableHead className="px-6 py-4 text-right font-black uppercase tracking-widest text-[10px] text-muted-foreground">Hành động</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                        {admins.map(user => (
+                            <TableRow key={user.id} className="hover:bg-primary/5 transition-colors">
+                            <TableCell className="px-6 py-4">
+                                <div className="font-bold text-lg">{user.fullName}</div>
+                                <div className="text-xs text-muted-foreground mt-1">@{user.username}</div>
+                            </TableCell>
+                            <TableCell className="px-6 py-4 text-right">
+                                <Button variant="ghost" size="icon" onClick={() => handleOpenEditUserModal(user)} className="rounded-full hover:bg-primary/10 hover:text-primary"><Pencil className="h-4 w-4" /></Button>
+                            </TableCell>
+                            </TableRow>
+                        ))}
+                        </TableBody>
+                    </Table>
+                  </div>
                 </TabsContent>
               </Tabs>
             </CardContent>
@@ -493,30 +529,33 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </TabsContent>
 
         <TabsContent value="classes">
-           <Card className="rounded-3xl shadow-lg shadow-primary/5">
+           <Card className="rounded-3xl shadow-lg shadow-primary/5 border-primary/10">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Danh sách Lớp học</CardTitle>
-                <CardDescription>{classes.length} lớp học trong hệ thống.</CardDescription>
+                <CardDescription>{classes.length} lớp học đang được quản lý.</CardDescription>
               </div>
                <Dialog open={isClassModalOpen} onOpenChange={setClassModalOpen}>
                 <DialogTrigger asChild>
-                  <Button size="icon" className="rounded-full"><Plus /></Button>
+                  <Button size="icon" className="rounded-full h-12 w-12 shadow-lg shadow-primary/20"><Plus /></Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="rounded-3xl">
                   <DialogHeader><DialogTitle>Thêm lớp học mới</DialogTitle></DialogHeader>
-                  <form onSubmit={handleAddClass} className="space-y-4">
-                    <Input placeholder="Tên lớp học" value={className} onChange={e => setClassName(e.target.value)} required />
+                  <form onSubmit={handleAddClass} className="space-y-4 pt-4">
+                    <div className="space-y-2">
+                        <Label>Tên lớp học</Label>
+                        <Input placeholder="Ví dụ: 8A1, 9A2..." value={className} onChange={e => setClassName(e.target.value)} required className="rounded-xl h-12" />
+                    </div>
                     <div className="space-y-2">
                       <Label>Giáo viên quản lý</Label>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="outline" className="w-full justify-between">
+                          <Button variant="outline" className="w-full h-12 justify-between rounded-xl">
                             <span className="truncate">{teacherIds.length > 0 ? getTeachersText(teacherIds) : "Chọn giáo viên..."}</span>
                             <ChevronDown className="h-4 w-4 opacity-50" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)] max-h-[300px] overflow-y-auto">
+                        <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)] max-h-[300px] overflow-y-auto rounded-xl">
                           {allTeachers.map(t => (
                             <DropdownMenuCheckboxItem key={t.id} checked={teacherIds.includes(t.id)} onCheckedChange={checked => setTeacherIds(prev => checked ? [...prev, t.id] : prev.filter(id => id !== t.id))} onSelect={e => e.preventDefault()}>
                               {t.fullName}
@@ -525,53 +564,60 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
-                    <Button type="submit" className="w-full">Thêm lớp học</Button>
+                    <Button type="submit" className="w-full h-12 rounded-xl font-bold mt-2 shadow-lg shadow-primary/10">Tạo lớp học mới</Button>
                   </form>
                 </DialogContent>
               </Dialog>
             </CardHeader>
             <CardContent>
-               <Table>
-                <TableHeader>
-                  <TableRow>
-                     <TableHead className="w-12"><Checkbox checked={selectedClasses.length > 0 && selectedClasses.length === classes.length} onCheckedChange={(checked) => setSelectedClasses(checked ? classes.map(c => c.id) : [])} /></TableHead>
-                    <TableHead>Tên lớp</TableHead>
-                    <TableHead>Giáo viên quản lý</TableHead>
-                    <TableHead className="text-right">Hành động</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {classes.map(cls => (
-                    <TableRow key={cls.id}>
-                      <TableCell><Checkbox checked={selectedClasses.includes(cls.id)} onCheckedChange={() => handleToggleClassSelection(cls.id)} /></TableCell>
-                      <TableCell className="font-bold">{cls.name}</TableCell>
-                      <TableCell className="text-sm">{getTeachersText(cls.teacherIds || [])}</TableCell>
-                      <TableCell className="text-right">
-                         <div className="flex items-center justify-end gap-2">
-                            <Button variant="ghost" size="icon" onClick={() => handleOpenEditClassModal(cls)} className="rounded-full"><Pencil className="h-4 w-4"/></Button>
-                            <Button variant="ghost" size="icon" onClick={() => onDeleteClasses([cls.id])} className="text-destructive hover:bg-destructive/10 rounded-full"><Trash2 className="h-4 w-4"/></Button>
-                         </div>
-                      </TableCell>
+               <div className="rounded-2xl border border-border/50 overflow-hidden bg-card/50">
+                <Table>
+                    <TableHeader className="bg-muted/30">
+                    <TableRow className="hover:bg-transparent">
+                        <TableHead className="w-12 px-6"><Checkbox checked={selectedClasses.length > 0 && selectedClasses.length === classes.length} onCheckedChange={(checked) => setSelectedClasses(checked ? classes.map(c => c.id) : [])} /></TableHead>
+                        <TableHead className="font-black uppercase tracking-widest text-[10px] text-muted-foreground px-6 py-4">Tên lớp</TableHead>
+                        <TableHead className="font-black uppercase tracking-widest text-[10px] text-muted-foreground px-6 py-4">Giáo viên quản lý</TableHead>
+                        <TableHead className="font-black uppercase tracking-widest text-[10px] text-muted-foreground px-6 py-4 text-right">Hành động</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                    </TableHeader>
+                    <TableBody>
+                    {classes.map(cls => (
+                        <TableRow key={cls.id} className="hover:bg-primary/5 transition-colors">
+                        <TableCell className="px-6"><Checkbox checked={selectedClasses.includes(cls.id)} onCheckedChange={() => handleToggleClassSelection(cls.id)} /></TableCell>
+                        <TableCell className="px-6 py-4 font-black text-xl text-primary">{cls.name}</TableCell>
+                        <TableCell className="px-6 py-4 text-sm font-medium">{getTeachersText(cls.teacherIds || [])}</TableCell>
+                        <TableCell className="px-6 py-4 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                                <Button variant="ghost" size="icon" onClick={() => handleOpenEditClassModal(cls)} className="rounded-full hover:bg-primary/10 hover:text-primary"><Pencil className="h-4 w-4"/></Button>
+                                <Button variant="ghost" size="icon" onClick={() => onDeleteClasses([cls.id])} className="text-destructive hover:bg-destructive/10 rounded-full"><Trash2 className="h-4 w-4"/></Button>
+                            </div>
+                        </TableCell>
+                        </TableRow>
+                    ))}
+                    </TableBody>
+                </Table>
+               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="stats">
           <div className="space-y-6">
-            <div className="flex items-center justify-between bg-muted/30 p-4 rounded-2xl border border-border/50">
-              <div className="flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-primary" />
-                <span className="font-bold">Lọc báo cáo theo thời gian</span>
+            <div className="flex items-center justify-between bg-card p-6 rounded-3xl border border-primary/10 shadow-lg shadow-primary/5">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                    <Calendar className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                    <h3 className="font-black text-lg">Lọc báo cáo theo thời gian</h3>
+                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Xem hiệu quả giảng dạy theo giai đoạn</p>
+                </div>
               </div>
               <Select value={timeRange} onValueChange={(v: any) => setTimeRange(v)}>
-                <SelectTrigger className="w-[200px] bg-background">
+                <SelectTrigger className="w-[220px] h-12 rounded-xl border-2 border-primary/10 font-bold bg-background">
                   <SelectValue placeholder="Chọn khoảng thời gian" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-xl">
                   <SelectItem value="all">Tất cả thời gian</SelectItem>
                   <SelectItem value="month">30 ngày qua</SelectItem>
                   <SelectItem value="week">7 ngày qua</SelectItem>
@@ -580,69 +626,76 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <Card className="rounded-3xl shadow-lg border-primary/10 lg:col-span-1">
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <BarChart3 className="text-primary w-5 h-5" />
-                    <CardTitle>Thống kê Giáo viên</CardTitle>
+              <Card className="rounded-3xl shadow-xl border-primary/10 lg:col-span-1 overflow-hidden">
+                <CardHeader className="bg-primary/5 border-b border-primary/10">
+                  <div className="flex items-center gap-3">
+                    <BarChart3 className="text-primary w-6 h-6" />
+                    <div>
+                        <CardTitle className="text-lg">Thống kê Giáo viên</CardTitle>
+                        <CardDescription className="text-xs">Xếp hạng theo số lượng bài tập.</CardDescription>
+                    </div>
                   </div>
-                  <CardDescription>Số lượng bài tập đã giao theo thời gian lọc.</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-6">
                   <div className="space-y-6">
                     {teacherStats.map((stat, i) => (
-                      <div key={i} className="space-y-2">
+                      <div key={i} className="space-y-3">
                         <div className="flex justify-between items-center text-sm">
-                          <span className="font-bold">{stat.name}</span>
-                          <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-xs font-black">{stat.count} bài</span>
+                          <span className="font-bold flex items-center gap-2">
+                              <span className="text-[10px] w-5 h-5 flex items-center justify-center rounded-full bg-muted font-black">{i + 1}</span>
+                              {stat.name}
+                          </span>
+                          <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">{stat.count} bài tập</span>
                         </div>
-                        <Progress value={stat.count > 0 ? (stat.count / Math.max(...teacherStats.map(s => s.count), 1)) * 100 : 0} className="h-2" />
+                        <Progress value={stat.count > 0 ? (stat.count / Math.max(...teacherStats.map(s => s.count), 1)) * 100 : 0} className="h-2 rounded-full bg-muted/50" />
                       </div>
                     ))}
-                    {teacherStats.length === 0 && <p className="text-center text-muted-foreground py-8">Chưa có dữ liệu giáo viên.</p>}
+                    {teacherStats.length === 0 && <p className="text-center text-muted-foreground py-12 italic">Chưa có dữ liệu bài tập trong giai đoạn này.</p>}
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="rounded-3xl shadow-lg border-primary/10 lg:col-span-2">
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="text-accent w-5 h-5" />
-                    <CardTitle>Tình hình Làm bài theo Lớp</CardTitle>
+              <Card className="rounded-3xl shadow-xl border-primary/10 lg:col-span-2 overflow-hidden">
+                <CardHeader className="bg-accent/5 border-b border-accent/10">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="text-accent w-6 h-6" />
+                    <div>
+                        <CardTitle className="text-lg">Hiệu suất Làm bài theo Lớp</CardTitle>
+                        <CardDescription className="text-xs">Theo dõi tỉ lệ hoàn thành mục tiêu.</CardDescription>
+                    </div>
                   </div>
-                  <CardDescription>Tỉ lệ hoàn thành bài tập của học sinh trong thời gian lọc.</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-0">
                   <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Lớp học</TableHead>
-                        <TableHead className="text-center">Sĩ số</TableHead>
-                        <TableHead className="text-center">Số bài đã giao</TableHead>
-                        <TableHead className="text-right">Tỉ lệ hoàn thành</TableHead>
+                    <TableHeader className="bg-muted/30">
+                      <TableRow className="hover:bg-transparent">
+                        <TableHead className="px-6 py-4 font-black uppercase tracking-widest text-[10px]">Lớp học</TableHead>
+                        <TableHead className="text-center px-6 py-4 font-black uppercase tracking-widest text-[10px]">Sĩ số</TableHead>
+                        <TableHead className="text-center px-6 py-4 font-black uppercase tracking-widest text-[10px]">Bài đã giao</TableHead>
+                        <TableHead className="text-right px-6 py-4 font-black uppercase tracking-widest text-[10px]">Tỉ lệ hoàn thành</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {classStats.map((stat) => (
-                        <TableRow key={stat.id}>
-                          <TableCell className="font-black text-lg">{stat.name}</TableCell>
-                          <TableCell className="text-center">
-                              <div className="flex items-center justify-center gap-1 font-medium">
-                                  <Users className="w-3.5 h-3.5 opacity-50" /> {stat.studentCount}
+                        <TableRow key={stat.id} className="hover:bg-muted/10 transition-colors">
+                          <TableCell className="font-black text-xl px-6 py-5 text-foreground">{stat.name}</TableCell>
+                          <TableCell className="text-center px-6 py-5">
+                              <div className="flex items-center justify-center gap-1.5 font-bold text-muted-foreground">
+                                  <Users className="w-4 h-4 opacity-40" /> {stat.studentCount}
                               </div>
                           </TableCell>
-                          <TableCell className="text-center">
-                              <div className="flex items-center justify-center gap-1 font-medium">
-                                  <BookOpen className="w-3.5 h-3.5 opacity-50" /> {stat.assignmentCount}
+                          <TableCell className="text-center px-6 py-5">
+                              <div className="flex items-center justify-center gap-1.5 font-bold text-primary">
+                                  <BookOpen className="w-4 h-4 opacity-40" /> {stat.assignmentCount}
                               </div>
                           </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex flex-col items-end gap-1">
+                          <TableCell className="text-right px-6 py-5">
+                            <div className="flex flex-col items-end gap-2">
                               <span className={`text-sm font-black ${stat.completionRate >= 80 ? 'text-accent' : stat.completionRate >= 50 ? 'text-primary' : 'text-muted-foreground'}`}>
                                   {stat.completionRate}%
                               </span>
-                              <div className="w-24">
-                                  <Progress value={stat.completionRate} className={`h-1.5 ${stat.completionRate >= 80 ? '[&>div]:bg-accent' : ''}`} />
+                              <div className="w-32">
+                                  <Progress value={stat.completionRate} className={`h-2 ${stat.completionRate >= 80 ? '[&>div]:bg-accent' : ''}`} />
                               </div>
                             </div>
                           </TableCell>
@@ -650,7 +703,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       ))}
                       {classStats.length === 0 && (
                           <TableRow>
-                              <TableCell colSpan={4} className="text-center py-10 text-muted-foreground">Chưa có dữ liệu lớp học.</TableCell>
+                              <TableCell colSpan={4} className="text-center py-20 text-muted-foreground italic">Chưa có dữ liệu thống kê cho các lớp học.</TableCell>
                           </TableRow>
                       )}
                     </TableBody>
@@ -664,38 +717,73 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* Edit User Modal */}
       <Dialog open={isEditUserModalOpen} onOpenChange={setEditUserModalOpen}>
-        <DialogContent>
+        <DialogContent className="rounded-3xl">
           <DialogHeader><DialogTitle>Chỉnh sửa người dùng</DialogTitle></DialogHeader>
-          <form onSubmit={handleUpdateUser} className="space-y-4">
+          <form onSubmit={handleUpdateUser} className="space-y-4 pt-4">
             <div className="space-y-2">
                 <Label>Họ và tên</Label>
-                <Input placeholder="Họ và tên" value={editFullName} onChange={e => setEditFullName(e.target.value)} required />
+                <Input placeholder="Họ và tên" value={editFullName} onChange={e => setEditFullName(e.target.value)} required className="rounded-xl h-12" />
             </div>
             <div className="space-y-2">
                 <Label>Tên đăng nhập</Label>
-                <Input placeholder="Tên đăng nhập" value={editUsername} onChange={e => setEditUsername(e.target.value)} required />
+                <Input placeholder="Tên đăng nhập" value={editUsername} onChange={e => setEditUsername(e.target.value)} required className="rounded-xl h-12" />
             </div>
             <div className="space-y-2">
                 <Label>Mật khẩu</Label>
-                <Input type="text" placeholder="Mật khẩu" value={editPassword} onChange={e => setEditPassword(e.target.value)} />
+                <Input type="text" placeholder="Mật khẩu" value={editPassword} onChange={e => setEditPassword(e.target.value)} className="rounded-xl h-12" />
             </div>
             <div className="space-y-2">
                 <Label>Vai trò</Label>
                 <Select onValueChange={(v) => setEditRole(v as UserRole)} value={editRole}>
-                    <SelectTrigger><SelectValue placeholder="Chọn vai trò" /></SelectTrigger>
-                    <SelectContent>
+                    <SelectTrigger className="rounded-xl h-12"><SelectValue placeholder="Chọn vai trò" /></SelectTrigger>
+                    <SelectContent className="rounded-xl">
                         <SelectItem value={UserRole.ADMIN}>Quản trị viên</SelectItem>
                         <SelectItem value={UserRole.TEACHER}>Giáo viên</SelectItem>
                         <SelectItem value={UserRole.STUDENT}>Học sinh</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
-            <DialogFooter>
-                <Button type="button" variant="ghost" onClick={() => setEditUserModalOpen(false)}>Hủy</Button>
-                <Button type="submit">Lưu thay đổi</Button>
+            <DialogFooter className="pt-4">
+                <Button type="button" variant="ghost" onClick={() => setEditUserModalOpen(false)} className="rounded-xl">Hủy</Button>
+                <Button type="submit" className="rounded-xl font-bold px-8 shadow-lg shadow-primary/10">Lưu thay đổi</Button>
             </DialogFooter>
           </form>
         </DialogContent>
+      </Dialog>
+
+      {/* Edit Class Modal */}
+      <Dialog open={isClassEditModalOpen} onOpenChange={setClassEditModalOpen}>
+          <DialogContent className="rounded-3xl">
+              <DialogHeader><DialogTitle>Chỉnh sửa lớp học</DialogTitle></DialogHeader>
+              <form onSubmit={handleUpdateClass} className="space-y-4 pt-4">
+                  <div className="space-y-2">
+                      <Label>Tên lớp học</Label>
+                      <Input placeholder="Ví dụ: 8A1..." value={editClassName} onChange={e => setEditClassName(e.target.value)} required className="rounded-xl h-12" />
+                  </div>
+                  <div className="space-y-2">
+                      <Label>Giáo viên quản lý</Label>
+                      <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                              <Button variant="outline" className="w-full h-12 justify-between rounded-xl">
+                                  <span className="truncate">{editTeacherIds.length > 0 ? getTeachersText(editTeacherIds) : "Chọn giáo viên..."}</span>
+                                  <ChevronDown className="h-4 w-4 opacity-50" />
+                              </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)] max-h-[300px] overflow-y-auto rounded-xl">
+                              {allTeachers.map(t => (
+                                  <DropdownMenuCheckboxItem key={t.id} checked={editTeacherIds.includes(t.id)} onCheckedChange={checked => setEditTeacherIds(prev => checked ? [...prev, t.id] : prev.filter(id => id !== t.id))} onSelect={e => e.preventDefault()}>
+                                      {t.fullName}
+                                  </DropdownMenuCheckboxItem>
+                              ))}
+                          </DropdownMenuContent>
+                      </DropdownMenu>
+                  </div>
+                  <DialogFooter className="pt-4">
+                      <Button type="button" variant="ghost" onClick={() => setClassEditModalOpen(false)} className="rounded-xl">Hủy</Button>
+                      <Button type="submit" className="rounded-xl font-bold px-8">Cập nhật lớp</Button>
+                  </DialogFooter>
+              </form>
+          </DialogContent>
       </Dialog>
     </div>
   );
