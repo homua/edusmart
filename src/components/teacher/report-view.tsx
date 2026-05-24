@@ -37,9 +37,15 @@ const ReportView: React.FC<ReportViewProps> = ({ assignment, submissions, onBack
     if (!gradingSubmission) return;
     
     const points = parseFloat(value) || 0;
-    const updatedAnswers = gradingSubmission.answers.map(a => 
-      a.questionId === questionId ? { ...a, awardedPoints: points } : a
-    );
+    let updatedAnswers = [...gradingSubmission.answers];
+    const answerIndex = updatedAnswers.findIndex(a => a.questionId === questionId);
+
+    if (answerIndex > -1) {
+      updatedAnswers[answerIndex] = { ...updatedAnswers[answerIndex], awardedPoints: points };
+    } else {
+      // Handle cases where the answer record might be missing (e.g. new questions added later)
+      updatedAnswers.push({ questionId, answer: '', awardedPoints: points });
+    }
     
     // Recalculate total score
     const newTotalScore = updatedAnswers.reduce((sum, a) => sum + (a.awardedPoints || 0), 0);
