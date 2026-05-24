@@ -39,7 +39,9 @@ const SubmissionReview: React.FC<SubmissionReviewProps> = ({ assignment, submiss
               <Card key={q.id} className="rounded-3xl shadow-lg shadow-primary/5 border-primary/5">
                 <CardHeader>
                   <CardTitle className="text-lg">Câu {index + 1}: {q.text}</CardTitle>
-                  <CardDescription className="font-bold text-primary">{q.points} điểm</CardDescription>
+                  <CardDescription className="font-bold text-primary">
+                    Điểm đạt: {studentAnswer?.awardedPoints || 0} / {q.points} điểm
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -53,8 +55,8 @@ const SubmissionReview: React.FC<SubmissionReviewProps> = ({ assignment, submiss
                       </div>
                     </div>
                     <div className="p-4 bg-primary/5 border border-primary/10 rounded-xl">
-                      <p className="text-[10px] font-black uppercase text-primary/60 mb-2 tracking-widest">Đáp án đúng</p>
-                      <p className="font-black text-primary">{q.correctAnswer}</p>
+                      <p className="text-[10px] font-black uppercase text-primary/60 mb-2 tracking-widest">Đáp án đúng / Gợi ý</p>
+                      <p className="font-black text-primary leading-relaxed">{q.correctAnswer}</p>
                     </div>
                   </div>
                   {q.type === 'MULTIPLE_CHOICE' && q.options && q.options.length > 0 && (
