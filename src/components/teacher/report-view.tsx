@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { Assignment, Submission } from '@/lib/types';
@@ -77,7 +78,7 @@ const ReportView: React.FC<ReportViewProps> = ({ assignment, submissions, onBack
                             <p className="mt-2">Đáp án đúng: <span className="font-mono bg-secondary px-2 py-1 rounded-md text-sm">{q.correctAnswer}</span></p>
                             <div className={`mt-2 flex items-center gap-2 p-2 rounded-md ${isCorrect ? 'bg-accent/20 text-accent-foreground' : 'bg-destructive/10 text-destructive-foreground'}`}>
                                 {isCorrect ? <CheckCircle className="h-5 w-5 text-accent" /> : <XCircle className="h-5 w-5 text-destructive" />}
-                                <p>Học sinh trả lời: <span className="font-mono bg-background px-2 py-1 rounded-md text-sm">{studentAnswer?.answer || 'Chưa trả lời'}</span></p>
+                                <p>Học sinh trả lời: <span className="font-mono bg-muted text-foreground px-2 py-1 rounded-md text-sm border border-border/50">{studentAnswer?.answer || 'Chưa trả lời'}</span></p>
                             </div>
                         </div>
                     )
