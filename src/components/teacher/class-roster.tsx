@@ -258,7 +258,7 @@ const ClassRoster: React.FC<ClassRosterProps> = ({
                   
                   <div className="flex items-center gap-4 flex-1">
                     <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center font-black text-primary flex-shrink-0">
-                        {s.fullName.charAt(0).toUpperCase()}
+                        {(s.fullName.trim().split(' ').pop() || '').charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0">
                       <h4 className="font-black text-foreground text-lg truncate leading-tight">{s.fullName}</h4>

@@ -494,7 +494,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           
                           <div className="flex items-center gap-3 flex-1">
                             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center font-black text-primary flex-shrink-0">
-                                {user.fullName.charAt(0).toUpperCase()}
+                                {(user.fullName.trim().split(' ').pop() || '').charAt(0).toUpperCase()}
                             </div>
                             <div className="min-w-0">
                                 <p className="font-black text-foreground truncate leading-tight text-lg">{user.fullName}</p>
@@ -587,7 +587,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           
                           <div className="flex items-center gap-3 flex-1">
                             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center font-black text-primary flex-shrink-0">
-                                {user.fullName.charAt(0).toUpperCase()}
+                                {(user.fullName.trim().split(' ').pop() || '').charAt(0).toUpperCase()}
                             </div>
                             <div className="min-w-0">
                                 <p className="font-black text-foreground truncate leading-tight text-lg">{user.fullName}</p>
