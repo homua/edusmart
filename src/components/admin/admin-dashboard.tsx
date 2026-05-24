@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { UserRole, type User, type Class, type Assignment, type Submission } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -11,13 +11,14 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Trash2, Upload, Download, UserPlus, Pencil, FileDown, ChevronDown, BarChart3, Users, BookOpen, CheckCircle2 } from 'lucide-react';
+import { Plus, Trash2, Upload, Download, UserPlus, Pencil, FileDown, ChevronDown, BarChart3, Users, BookOpen, CheckCircle2, Calendar } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Progress } from '@/components/ui/progress';
 import * as XLSX from 'xlsx';
+import { subDays, isAfter, parseISO } from 'date-fns';
 
 interface AdminDashboardProps {
   users: User[];
@@ -55,6 +56,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [isEditUserModalOpen, setEditUserModalOpen] = useState(false);
   const [isClassModalOpen, setClassModalOpen] = useState(false);
   const [isClassEditModalOpen, setClassEditModalOpen] = useState(false);
+
+  // Stats time range filter
+  const [timeRange, setTimeRange] = useState<'all' | 'month' | 'week'>('all');
 
   // User form state
   const [fullName, setFullName] = useState('');
@@ -252,38 +256,55 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const currentStudentList = selectedClassId ? (selectedClassId === 'unassigned' ? unassignedStudents : studentsByClass[selectedClassId] || []) : [];
 
-  // Statistics Calculation
-  const teacherStats = allTeachers.map(teacher => {
-    const count = assignments.filter(a => a.teacherId === teacher.id).length;
-    return { name: teacher.fullName, count };
-  }).sort((a, b) => b.count - a.count);
+  // Statistics Calculation with time filtering
+  const statsData = useMemo(() => {
+    const now = new Date();
+    const cutoffDate = timeRange === 'month' ? subDays(now, 30) : timeRange === 'week' ? subDays(now, 7) : null;
 
-  const classStats = classes.map(cls => {
-    const classAssignments = assignments.filter(a => a.classIds.includes(cls.id));
-    const classStudents = studentsByClass[cls.id] || [];
-    
-    let totalSubmissionsNeeded = classAssignments.length * classStudents.length;
-    let actualSubmissions = 0;
+    const filteredAssignments = cutoffDate 
+      ? assignments.filter(a => isAfter(parseISO(a.createdAt), cutoffDate))
+      : assignments;
 
-    classAssignments.forEach(a => {
-        const assignmentSubmissions = submissions.filter(s => 
-            s.assignmentId === a.id && classStudents.some(cs => cs.id === s.studentId)
-        );
-        actualSubmissions += assignmentSubmissions.length;
-    });
+    const filteredSubmissions = cutoffDate
+      ? submissions.filter(s => isAfter(parseISO(s.submittedAt), cutoffDate))
+      : submissions;
 
-    const completionRate = totalSubmissionsNeeded > 0 
-        ? Math.round((actualSubmissions / totalSubmissionsNeeded) * 100) 
-        : 0;
+    const teacherStats = allTeachers.map(teacher => {
+      const count = filteredAssignments.filter(a => a.teacherId === teacher.id).length;
+      return { name: teacher.fullName, count };
+    }).sort((a, b) => b.count - a.count);
 
-    return {
-        id: cls.id,
-        name: cls.name,
-        studentCount: classStudents.length,
-        assignmentCount: classAssignments.length,
-        completionRate
-    };
-  }).sort((a, b) => b.completionRate - a.completionRate);
+    const classStats = classes.map(cls => {
+      const classAssignments = filteredAssignments.filter(a => a.classIds.includes(cls.id));
+      const classStudents = studentsByClass[cls.id] || [];
+      
+      let totalSubmissionsNeeded = classAssignments.length * classStudents.length;
+      let actualSubmissions = 0;
+
+      classAssignments.forEach(a => {
+          const assignmentSubmissions = filteredSubmissions.filter(s => 
+              s.assignmentId === a.id && classStudents.some(cs => cs.id === s.studentId)
+          );
+          actualSubmissions += assignmentSubmissions.length;
+      });
+
+      const completionRate = totalSubmissionsNeeded > 0 
+          ? Math.round((actualSubmissions / totalSubmissionsNeeded) * 100) 
+          : 0;
+
+      return {
+          id: cls.id,
+          name: cls.name,
+          studentCount: classStudents.length,
+          assignmentCount: classAssignments.length,
+          completionRate
+      };
+    }).sort((a, b) => b.completionRate - a.completionRate);
+
+    return { teacherStats, classStats };
+  }, [assignments, submissions, users, classes, timeRange]);
+
+  const { teacherStats, classStats } = statsData;
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -540,84 +561,103 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </TabsContent>
 
         <TabsContent value="stats">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <Card className="rounded-3xl shadow-lg border-primary/10 lg:col-span-1">
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <BarChart3 className="text-primary w-5 h-5" />
-                  <CardTitle>Thống kê Giáo viên</CardTitle>
-                </div>
-                <CardDescription>Số lượng bài tập đã giao bởi mỗi giáo viên.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  {teacherStats.map((stat, i) => (
-                    <div key={i} className="space-y-2">
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="font-bold">{stat.name}</span>
-                        <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-xs font-black">{stat.count} bài</span>
-                      </div>
-                      <Progress value={stat.count > 0 ? (stat.count / Math.max(...teacherStats.map(s => s.count), 1)) * 100 : 0} className="h-2" />
-                    </div>
-                  ))}
-                  {teacherStats.length === 0 && <p className="text-center text-muted-foreground py-8">Chưa có dữ liệu giáo viên.</p>}
-                </div>
-              </CardContent>
-            </Card>
+          <div className="space-y-6">
+            <div className="flex items-center justify-between bg-muted/30 p-4 rounded-2xl border border-border/50">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-primary" />
+                <span className="font-bold">Lọc báo cáo theo thời gian</span>
+              </div>
+              <Select value={timeRange} onValueChange={(v: any) => setTimeRange(v)}>
+                <SelectTrigger className="w-[200px] bg-background">
+                  <SelectValue placeholder="Chọn khoảng thời gian" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả thời gian</SelectItem>
+                  <SelectItem value="month">30 ngày qua</SelectItem>
+                  <SelectItem value="week">7 ngày qua</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-            <Card className="rounded-3xl shadow-lg border-primary/10 lg:col-span-2">
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="text-accent w-5 h-5" />
-                  <CardTitle>Tình hình Làm bài theo Lớp</CardTitle>
-                </div>
-                <CardDescription>Tỉ lệ hoàn thành bài tập của học sinh trong từng lớp.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Lớp học</TableHead>
-                      <TableHead className="text-center">Sĩ số</TableHead>
-                      <TableHead className="text-center">Số bài đã giao</TableHead>
-                      <TableHead className="text-right">Tỉ lệ hoàn thành</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {classStats.map((stat) => (
-                      <TableRow key={stat.id}>
-                        <TableCell className="font-black text-lg">{stat.name}</TableCell>
-                        <TableCell className="text-center">
-                            <div className="flex items-center justify-center gap-1 font-medium">
-                                <Users className="w-3.5 h-3.5 opacity-50" /> {stat.studentCount}
-                            </div>
-                        </TableCell>
-                        <TableCell className="text-center">
-                            <div className="flex items-center justify-center gap-1 font-medium">
-                                <BookOpen className="w-3.5 h-3.5 opacity-50" /> {stat.assignmentCount}
-                            </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex flex-col items-end gap-1">
-                            <span className={`text-sm font-black ${stat.completionRate >= 80 ? 'text-accent' : stat.completionRate >= 50 ? 'text-primary' : 'text-muted-foreground'}`}>
-                                {stat.completionRate}%
-                            </span>
-                            <div className="w-24">
-                                <Progress value={stat.completionRate} className={`h-1.5 ${stat.completionRate >= 80 ? '[&>div]:bg-accent' : ''}`} />
-                            </div>
-                          </div>
-                        </TableCell>
-                      </TableRow>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <Card className="rounded-3xl shadow-lg border-primary/10 lg:col-span-1">
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="text-primary w-5 h-5" />
+                    <CardTitle>Thống kê Giáo viên</CardTitle>
+                  </div>
+                  <CardDescription>Số lượng bài tập đã giao theo thời gian lọc.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    {teacherStats.map((stat, i) => (
+                      <div key={i} className="space-y-2">
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="font-bold">{stat.name}</span>
+                          <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-xs font-black">{stat.count} bài</span>
+                        </div>
+                        <Progress value={stat.count > 0 ? (stat.count / Math.max(...teacherStats.map(s => s.count), 1)) * 100 : 0} className="h-2" />
+                      </div>
                     ))}
-                    {classStats.length === 0 && (
-                        <TableRow>
-                            <TableCell colSpan={4} className="text-center py-10 text-muted-foreground">Chưa có dữ liệu lớp học.</TableCell>
+                    {teacherStats.length === 0 && <p className="text-center text-muted-foreground py-8">Chưa có dữ liệu giáo viên.</p>}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="rounded-3xl shadow-lg border-primary/10 lg:col-span-2">
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="text-accent w-5 h-5" />
+                    <CardTitle>Tình hình Làm bài theo Lớp</CardTitle>
+                  </div>
+                  <CardDescription>Tỉ lệ hoàn thành bài tập của học sinh trong thời gian lọc.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Lớp học</TableHead>
+                        <TableHead className="text-center">Sĩ số</TableHead>
+                        <TableHead className="text-center">Số bài đã giao</TableHead>
+                        <TableHead className="text-right">Tỉ lệ hoàn thành</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {classStats.map((stat) => (
+                        <TableRow key={stat.id}>
+                          <TableCell className="font-black text-lg">{stat.name}</TableCell>
+                          <TableCell className="text-center">
+                              <div className="flex items-center justify-center gap-1 font-medium">
+                                  <Users className="w-3.5 h-3.5 opacity-50" /> {stat.studentCount}
+                              </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                              <div className="flex items-center justify-center gap-1 font-medium">
+                                  <BookOpen className="w-3.5 h-3.5 opacity-50" /> {stat.assignmentCount}
+                              </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex flex-col items-end gap-1">
+                              <span className={`text-sm font-black ${stat.completionRate >= 80 ? 'text-accent' : stat.completionRate >= 50 ? 'text-primary' : 'text-muted-foreground'}`}>
+                                  {stat.completionRate}%
+                              </span>
+                              <div className="w-24">
+                                  <Progress value={stat.completionRate} className={`h-1.5 ${stat.completionRate >= 80 ? '[&>div]:bg-accent' : ''}`} />
+                              </div>
+                            </div>
+                          </TableCell>
                         </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+                      ))}
+                      {classStats.length === 0 && (
+                          <TableRow>
+                              <TableCell colSpan={4} className="text-center py-10 text-muted-foreground">Chưa có dữ liệu lớp học.</TableCell>
+                          </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </TabsContent>
       </Tabs>
