@@ -14,6 +14,7 @@ import { Plus, Trash2, ArrowLeft, ChevronDown, Bot, AlertCircle, Calendar } from
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { generateQuestionsAI, type GenerateQuestionsInput } from '@/ai/flows/generate-questions-flow';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 interface AssignmentFormProps {
   teacherId: string;
@@ -35,6 +36,7 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
   // AI Generation State
   const [isAiModalOpen, setAiModalOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [aiCategory, setAiCategory] = useState<'TEXT' | 'MCQ'>('MCQ');
   const [aiDifficulty, setAiDifficulty] = useState<'Dễ' | 'Trung bình' | 'Khó'>('Trung bình');
   const [aiQuestionType, setAiQuestionType] = useState<string>('MCQ_4');
   const [aiQuestionCount, setAiQuestionCount] = useState(3);
@@ -326,31 +328,57 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
               <DialogContent className="rounded-3xl max-w-md">
                   <DialogHeader>
                       <DialogTitle className="text-2xl font-black flex items-center gap-2"><Bot className="text-primary"/> Soạn bài bằng AI</DialogTitle>
-                      <DialogDescription>Chọn định dạng câu hỏi bạn muốn AI tạo tự động.</DialogDescription>
+                      <DialogDescription>Chọn hình thức và định dạng câu hỏi bạn muốn AI tạo tự động.</DialogDescription>
                   </DialogHeader>
-                  <div className="space-y-4 py-4">
-                      <div className="space-y-2">
-                          <Label className="font-bold">Dạng câu hỏi</Label>
-                          <Select value={aiQuestionType} onValueChange={setAiQuestionType}>
-                              <SelectTrigger className="h-12 rounded-xl">
-                                  <SelectValue placeholder="Chọn dạng câu hỏi" />
-                              </SelectTrigger>
-                              <SelectContent className="rounded-xl">
-                                  <SelectGroup>
-                                    <SelectLabel>Dạng Tự luận</SelectLabel>
-                                    <SelectItem value="TEXT">Câu hỏi Tự luận (Dài)</SelectItem>
-                                  </SelectGroup>
-                                  <SelectGroup>
-                                    <SelectLabel>Dạng Trắc nghiệm</SelectLabel>
+                  <div className="space-y-6 py-4">
+                      <div className="space-y-3">
+                          <Label className="font-bold text-base">Hình thức câu hỏi</Label>
+                          <RadioGroup 
+                            value={aiCategory} 
+                            onValueChange={(v) => {
+                              setAiCategory(v as 'TEXT' | 'MCQ');
+                              if (v === 'TEXT') setAiQuestionType('TEXT');
+                              else if (aiQuestionType === 'TEXT') setAiQuestionType('MCQ_4');
+                            }}
+                            className="flex gap-6"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="TEXT" id="ai-cat-text" />
+                              <Label htmlFor="ai-cat-text" className="font-bold cursor-pointer">Tự luận</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="MCQ" id="ai-cat-mcq" />
+                              <Label htmlFor="ai-cat-mcq" className="font-bold cursor-pointer">Trắc nghiệm</Label>
+                            </div>
+                          </RadioGroup>
+                      </div>
+
+                      {aiCategory === 'MCQ' && (
+                        <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <Label className="font-bold">Loại trắc nghiệm</Label>
+                            <Select value={aiQuestionType} onValueChange={setAiQuestionType}>
+                                <SelectTrigger className="h-12 rounded-xl">
+                                    <SelectValue placeholder="Chọn loại trắc nghiệm" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl">
                                     <SelectItem value="MCQ_4">Dạng 4 đáp án (A, B, C, D)</SelectItem>
                                     <SelectItem value="TRUE_FALSE">Dạng Đúng / Sai</SelectItem>
                                     <SelectItem value="SHORT_ANSWER">Dạng Trả lời ngắn</SelectItem>
-                                    <SelectItem value="ALL_MCQ" className="font-bold text-primary">Tất cả dạng trắc nghiệm</SelectItem>
-                                  </SelectGroup>
-                              </SelectContent>
-                          </Select>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
+                                    <SelectItem value="ALL_MCQ" className="font-bold text-primary">Tổng hợp các dạng trên</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                      )}
+
+                      {aiCategory === 'TEXT' && (
+                         <div className="p-4 bg-muted/30 rounded-xl border border-border/50 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <p className="text-sm text-muted-foreground italic flex items-center gap-2">
+                               <AlertCircle className="w-4 h-4" /> Hệ thống sẽ tạo các câu hỏi yêu cầu học sinh phân tích, giải thích chi tiết.
+                            </p>
+                         </div>
+                      )}
+
+                      <div className="grid grid-cols-2 gap-4 border-t pt-4">
                         <div className="space-y-2">
                             <Label className="font-bold">Độ khó</Label>
                             <Select value={aiDifficulty} onValueChange={(v) => setAiDifficulty(v as any)}>
@@ -379,7 +407,7 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
                       <Button 
                         onClick={handleGenerateQuestions} 
                         disabled={isGenerating || !subject || !title}
-                        className="rounded-xl font-bold px-8"
+                        className="rounded-xl font-bold px-8 shadow-lg shadow-primary/10"
                       >
                           {isGenerating ? "Đang tạo..." : "Bắt đầu tạo"}
                       </Button>
