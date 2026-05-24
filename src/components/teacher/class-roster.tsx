@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { ArrowLeft, Plus, Sparkles, Trash2, User as UserIcon, FileDown } from 'lucide-react';
+import { ArrowLeft, Plus, Sparkles, Trash2, User as UserIcon, FileDown, Pencil } from 'lucide-react';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -235,26 +235,35 @@ const ClassRoster: React.FC<ClassRosterProps> = ({
               <label htmlFor="select-all" className="ml-3 text-sm font-medium">Chọn tất cả ({students.length} học sinh)</label>
             </div>
           )}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+          <div className="grid grid-cols-1 gap-4 p-4">
             {students.map(s => (
-              <div key={s.id} className="p-4 bg-background rounded-2xl flex justify-between items-center group transition-all border-2 border-transparent hover:border-primary/20 hover:shadow-md">
-                <div className="flex items-center gap-3">
+              <div key={s.id} className="p-4 bg-background rounded-2xl flex flex-col md:flex-row md:items-center justify-between group transition-all border-2 border-transparent hover:border-primary/20 hover:shadow-md gap-4">
+                <div className="flex items-center gap-4 flex-1">
                   <Checkbox
                     id={`student-${s.id}`}
                     checked={selectedStudents.includes(s.id)}
                     onCheckedChange={(checked) => setSelectedStudents(prev => checked ? [...prev, s.id] : prev.filter(id => id !== s.id))}
                   />
-                  <label htmlFor={`student-${s.id}`} className="flex items-center gap-4 cursor-pointer">
+                  <div className="flex items-center gap-4 cursor-pointer">
                     <Avatar><AvatarFallback><UserIcon /></AvatarFallback></Avatar>
                     <div>
-                      <h4 className="font-bold text-foreground">{s.fullName}</h4>
+                      <h4 className="font-bold text-foreground text-lg">{s.fullName}</h4>
                       <span className="text-xs text-muted-foreground font-mono">@{s.username}</span>
-                      <div className="text-xs text-muted-foreground font-mono">Mật khẩu: <b>{s.password}</b></div>
                     </div>
-                  </label>
+                  </div>
+                </div>
+                
+                <div className="flex-1 bg-muted/30 p-2 rounded-xl text-xs flex justify-between items-center gap-4">
+                    <span className="font-mono text-muted-foreground truncate">TK: {s.username}</span>
+                    <span className="font-black text-primary flex-shrink-0">MK: {s.password}</span>
                 </div>
               </div>
             ))}
+            {students.length === 0 && (
+              <div className="text-center py-20 text-muted-foreground italic">
+                Lớp học chưa có học sinh nào.
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

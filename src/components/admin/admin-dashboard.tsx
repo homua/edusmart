@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -432,40 +433,40 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
                   
                   <ScrollArea className="h-[500px] w-full rounded-2xl border border-border/50 bg-muted/10 p-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                       {currentStudentList.map(user => (
-                        <div key={user.id} className={`group relative p-5 rounded-2xl border-2 transition-all flex flex-col gap-3 ${selectedStudents.includes(user.id) ? 'bg-primary/5 border-primary shadow-md' : 'bg-card border-transparent hover:border-primary/20 hover:shadow-sm'}`}>
-                          <div className="absolute top-4 right-4 z-10">
+                        <div key={user.id} className={`group relative p-5 rounded-2xl border-2 transition-all flex flex-col md:flex-row md:items-center gap-4 ${selectedStudents.includes(user.id) ? 'bg-primary/5 border-primary shadow-md' : 'bg-card border-transparent hover:border-primary/20 hover:shadow-sm'}`}>
+                          <div className="absolute top-4 right-4 md:static md:order-last z-10">
                             <Checkbox 
                                 checked={selectedStudents.includes(user.id)} 
                                 onCheckedChange={() => handleToggleStudentSelection(user.id)} 
                             />
                           </div>
                           
-                          <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center font-black text-primary">
+                          <div className="flex items-center gap-3 flex-1">
+                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center font-black text-primary flex-shrink-0">
                                 {user.fullName.charAt(0).toUpperCase()}
                             </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="font-black text-foreground truncate leading-tight">{user.fullName}</p>
+                            <div className="min-w-0">
+                                <p className="font-black text-foreground truncate leading-tight text-lg">{user.fullName}</p>
                                 <p className="text-xs text-muted-foreground/70 truncate">@{user.username}</p>
                             </div>
                           </div>
 
-                          <div className="space-y-1 mt-auto">
-                            <div className="text-[10px] uppercase font-black tracking-widest text-muted-foreground/60">Tài khoản & Mật khẩu</div>
-                            <div className="bg-muted/50 p-2 rounded-xl text-xs flex justify-between items-center">
-                                <span className="font-mono text-foreground/80">{user.username}</span>
-                                <span className="font-black text-primary">{user.password}</span>
+                          <div className="space-y-1 flex-1">
+                            <div className="text-[10px] uppercase font-black tracking-widest text-muted-foreground/60">Thông tin đăng nhập</div>
+                            <div className="bg-muted/50 p-2 rounded-xl text-xs flex justify-between items-center gap-4">
+                                <span className="font-mono text-foreground/80 truncate">TK: {user.username}</span>
+                                <span className="font-black text-primary flex-shrink-0">MK: {user.password}</span>
                             </div>
                           </div>
 
-                          <div className="flex gap-2 pt-1 border-t border-border/50">
+                          <div className="flex gap-2 pt-1 md:pt-0 border-t md:border-t-0 border-border/50">
                             <Button 
                                 variant="ghost" 
                                 size="sm" 
                                 onClick={() => handleOpenEditUserModal(user)} 
-                                className="flex-1 h-8 rounded-lg text-[10px] font-black uppercase tracking-tighter hover:bg-primary/10 hover:text-primary"
+                                className="flex-1 md:flex-none h-9 px-4 rounded-lg text-[10px] font-black uppercase tracking-tighter hover:bg-primary/10 hover:text-primary"
                             >
                                 <Pencil className="mr-1 h-3 w-3" /> Sửa
                             </Button>
@@ -473,7 +474,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 variant="ghost" 
                                 size="sm" 
                                 onClick={() => onDeleteUser(user)} 
-                                className="flex-1 h-8 rounded-lg text-[10px] font-black uppercase tracking-tighter text-destructive hover:bg-destructive/10"
+                                className="flex-1 md:flex-none h-9 px-4 rounded-lg text-[10px] font-black uppercase tracking-tighter text-destructive hover:bg-destructive/10"
                             >
                                 <Trash2 className="mr-1 h-3 w-3" /> Xóa
                             </Button>
