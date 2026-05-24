@@ -175,7 +175,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setClassToEdit(null);
   };
 
-  const allTeachers = users.filter(u => u.role === UserRole.TEACHER);
+  const allTeachers = useMemo(() => {
+    return users.filter(u => u.role === UserRole.TEACHER).sort((a, b) => {
+      const nameA = a.fullName.trim().split(' ').pop() || '';
+      const nameB = b.fullName.trim().split(' ').pop() || '';
+      return nameA.localeCompare(nameB, 'vi');
+    });
+  }, [users]);
 
   const getTeachersText = (ids: string[]) => {
     if (!ids || ids.length === 0) return "Chưa gán";
@@ -245,12 +251,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const admins = users.filter(u => u.role === UserRole.ADMIN);
   const studentsByClass = useMemo(() => {
     return classes.reduce((acc, cls) => {
-      acc[cls.id] = users.filter(s => s.role === UserRole.STUDENT && s.classId === cls.id);
+      acc[cls.id] = users.filter(s => s.role === UserRole.STUDENT && s.classId === cls.id).sort((a, b) => {
+        const nameA = a.fullName.trim().split(' ').pop() || '';
+        const nameB = b.fullName.trim().split(' ').pop() || '';
+        return nameA.localeCompare(nameB, 'vi');
+      });
       return acc;
     }, {} as Record<string, User[]>);
   }, [classes, users]);
 
-  const unassignedStudents = users.filter(s => s.role === UserRole.STUDENT && (!s.classId || !classes.some(c => c.id === s.classId)));
+  const unassignedStudents = useMemo(() => {
+    return users.filter(s => s.role === UserRole.STUDENT && (!s.classId || !classes.some(c => c.id === s.classId))).sort((a, b) => {
+      const nameA = a.fullName.trim().split(' ').pop() || '';
+      const nameB = b.fullName.trim().split(' ').pop() || '';
+      return nameA.localeCompare(nameB, 'vi');
+    });
+  }, [users, classes]);
 
   useEffect(() => {
     if (!classes.some(c => c.id === selectedClassId) && selectedClassId !== 'unassigned') {
@@ -318,13 +334,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <p className="text-muted-foreground">Quản lý người dùng, lớp học và dữ liệu hệ thống.</p>
         </div>
         <div className="flex items-center gap-2">
-           <Button onClick={onExport} variant="outline" title="Xuất toàn bộ dữ liệu ra file Excel (.xlsx)">
-              <Download className="mr-2" />
+           <Button onClick={onExport} variant="outline" title="Xuất toàn bộ dữ liệu ra file Excel (.xlsx)" className="rounded-xl border-2">
+              <Download className="mr-2 h-4 w-4" />
               Xuất dữ liệu
            </Button>
            <Label htmlFor="import-file" className="cursor-pointer">
-            <div className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
-                <Upload className="mr-2" />
+            <div className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-bold ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border-2 border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+                <Upload className="mr-2 h-4 w-4" />
                 Nhập dữ liệu
             </div>
              <Input id="import-file" type="file" accept=".xlsx, .xls" className="hidden" onChange={onImport} />
@@ -333,10 +349,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
       </div>
 
       <Tabs defaultValue="users" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-8">
-          <TabsTrigger value="users" className="py-3 text-base font-bold uppercase tracking-tight">Quản lý Người dùng</TabsTrigger>
-          <TabsTrigger value="classes" className="py-3 text-base font-bold uppercase tracking-tight">Quản lý Lớp học</TabsTrigger>
-          <TabsTrigger value="stats" className="py-3 text-base font-bold uppercase tracking-tight">Thống kê & Báo cáo</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3 mb-8 bg-muted/50 p-1 rounded-2xl h-auto">
+          <TabsTrigger value="users" className="py-3 text-base font-bold uppercase tracking-tight rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Quản lý Người dùng</TabsTrigger>
+          <TabsTrigger value="classes" className="py-3 text-base font-bold uppercase tracking-tight rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Quản lý Lớp học</TabsTrigger>
+          <TabsTrigger value="stats" className="py-3 text-base font-bold uppercase tracking-tight rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Thống kê & Báo cáo</TabsTrigger>
         </TabsList>
 
         <TabsContent value="users">
@@ -350,21 +366,33 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <DialogTrigger asChild>
                   <Button size="icon" className="rounded-full h-12 w-12 shadow-lg shadow-primary/20"><UserPlus /></Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="rounded-3xl">
                   <DialogHeader><DialogTitle>Thêm người dùng mới</DialogTitle></DialogHeader>
-                  <form onSubmit={handleAddUser} className="space-y-4">
-                    <Input placeholder="Họ và tên" value={fullName} onChange={e => setFullName(e.target.value)} required className="rounded-xl h-12" />
-                    <Input placeholder="Tên đăng nhập" value={username} onChange={e => setUsername(e.target.value)} required className="rounded-xl h-12" />
-                    <Input type="password" placeholder="Mật khẩu" value={password} onChange={e => setPassword(e.target.value)} required className="rounded-xl h-12" />
-                    <Select onValueChange={(v) => setRole(v as UserRole)} defaultValue={role}>
-                      <SelectTrigger className="rounded-xl h-12"><SelectValue placeholder="Chọn vai trò" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={UserRole.ADMIN}>Quản trị viên</SelectItem>
-                        <SelectItem value={UserRole.TEACHER}>Giáo viên</SelectItem>
-                        <SelectItem value={UserRole.STUDENT}>Học sinh</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button type="submit" className="w-full h-12 rounded-xl font-bold">Thêm người dùng</Button>
+                  <form onSubmit={handleAddUser} className="space-y-4 pt-4">
+                    <div className="space-y-2">
+                        <Label>Họ và tên</Label>
+                        <Input placeholder="Họ và tên" value={fullName} onChange={e => setFullName(e.target.value)} required className="rounded-xl h-12" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Tên đăng nhập</Label>
+                        <Input placeholder="Tên đăng nhập" value={username} onChange={e => setUsername(e.target.value)} required className="rounded-xl h-12" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Mật khẩu</Label>
+                        <Input type="password" placeholder="Mật khẩu" value={password} onChange={e => setPassword(e.target.value)} required className="rounded-xl h-12" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Vai trò</Label>
+                        <Select onValueChange={(v) => setRole(v as UserRole)} defaultValue={role}>
+                            <SelectTrigger className="rounded-xl h-12"><SelectValue placeholder="Chọn vai trò" /></SelectTrigger>
+                            <SelectContent className="rounded-xl">
+                                <SelectItem value={UserRole.ADMIN}>Quản trị viên</SelectItem>
+                                <SelectItem value={UserRole.TEACHER}>Giáo viên</SelectItem>
+                                <SelectItem value={UserRole.STUDENT}>Học sinh</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <Button type="submit" className="w-full h-12 rounded-xl font-bold mt-2">Thêm người dùng</Button>
                   </form>
                 </DialogContent>
               </Dialog>
@@ -809,49 +837,42 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="p-0">
-                  <Table>
-                    <TableHeader className="bg-muted/30">
-                      <TableRow className="hover:bg-transparent">
-                        <TableHead className="px-6 py-4 font-black uppercase tracking-widest text-[10px]">Lớp học</TableHead>
-                        <TableHead className="text-center px-6 py-4 font-black uppercase tracking-widest text-[10px]">Sĩ số</TableHead>
-                        <TableHead className="text-center px-6 py-4 font-black uppercase tracking-widest text-[10px]">Bài đã giao</TableHead>
-                        <TableHead className="text-right px-6 py-4 font-black uppercase tracking-widest text-[10px]">Tỉ lệ hoàn thành</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                <CardContent className="p-6">
+                  <ScrollArea className="h-[400px] pr-4">
+                    <div className="grid grid-cols-1 gap-4">
                       {classStats.map((stat) => (
-                        <TableRow key={stat.id} className="hover:bg-muted/10 transition-colors">
-                          <TableCell className="font-black text-xl px-6 py-5 text-foreground">{stat.name}</TableCell>
-                          <TableCell className="text-center px-6 py-5">
-                              <div className="flex items-center justify-center gap-1.5 font-bold text-muted-foreground">
-                                  <Users className="w-4 h-4 opacity-40" /> {stat.studentCount}
+                        <div key={stat.id} className="p-5 rounded-2xl bg-muted/30 border border-border/50 hover:border-accent/20 transition-all">
+                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 rounded-xl bg-accent/10 flex items-center justify-center font-black text-accent text-lg">
+                                {stat.name.substring(0, 2)}
                               </div>
-                          </TableCell>
-                          <TableCell className="text-center px-6 py-5">
-                              <div className="flex items-center justify-center gap-1.5 font-bold text-primary">
-                                  <BookOpen className="w-4 h-4 opacity-40" /> {stat.assignmentCount}
-                              </div>
-                          </TableCell>
-                          <TableCell className="text-right px-6 py-5">
-                            <div className="flex flex-col items-end gap-2">
-                              <span className={`text-sm font-black ${stat.completionRate >= 80 ? 'text-accent' : stat.completionRate >= 50 ? 'text-primary' : 'text-muted-foreground'}`}>
-                                  {stat.completionRate}%
-                              </span>
-                              <div className="w-32">
-                                  <Progress value={stat.completionRate} className={`h-2 ${stat.completionRate >= 80 ? '[&>div]:bg-accent' : ''}`} />
+                              <div>
+                                <h4 className="font-black text-xl text-foreground">{stat.name}</h4>
+                                <div className="flex items-center gap-3 text-xs text-muted-foreground font-medium">
+                                  <span className="flex items-center gap-1"><Users className="w-3 h-3"/> {stat.studentCount} HS</span>
+                                  <span className="flex items-center gap-1"><BookOpen className="w-3 h-3"/> {stat.assignmentCount} bài</span>
+                                </div>
                               </div>
                             </div>
-                          </TableCell>
-                        </TableRow>
+                            <div className="text-right">
+                              <span className={`text-2xl font-black ${stat.completionRate >= 80 ? 'text-accent' : stat.completionRate >= 50 ? 'text-primary' : 'text-muted-foreground'}`}>
+                                {stat.completionRate}%
+                              </span>
+                              <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Hoàn thành</p>
+                            </div>
+                          </div>
+                          <Progress value={stat.completionRate} className={`h-2.5 rounded-full ${stat.completionRate >= 80 ? '[&>div]:bg-accent' : ''}`} />
+                        </div>
                       ))}
                       {classStats.length === 0 && (
-                          <TableRow>
-                              <TableCell colSpan={4} className="text-center py-20 text-muted-foreground italic">Chưa có dữ liệu thống kê cho các lớp học.</TableCell>
-                          </TableRow>
+                        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+                          <CheckCircle2 className="h-12 w-12 opacity-10 mb-4" />
+                          <p className="italic font-medium text-center">Chưa có dữ liệu thống kê cho các lớp học.</p>
+                        </div>
                       )}
-                    </TableBody>
-                  </Table>
+                    </div>
+                  </ScrollArea>
                 </CardContent>
               </Card>
             </div>
