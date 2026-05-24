@@ -9,10 +9,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { ArrowLeft, Plus, Sparkles, Trash2, User as UserIcon, FileDown, Pencil } from 'lucide-react';
+import { ArrowLeft, Plus, Sparkles, Trash2, User as UserIcon, FileDown, Clock, Copy, LayoutGrid } from 'lucide-react';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Label } from '@/components/ui/label';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,6 +27,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import * as XLSX from 'xlsx';
+import { format, parseISO } from 'date-fns';
+import { vi } from 'date-fns/locale';
 
 interface ClassRosterProps {
   currentUser: User;
@@ -121,6 +125,12 @@ const ClassRoster: React.FC<ClassRosterProps> = ({
     toast({ title: "Thành công", description: "Đã xuất danh sách tài khoản học sinh." });
   };
 
+  const handleCopyCredentials = (user: User) => {
+    const text = `Tài khoản: ${user.username}\nMật khẩu: ${user.password}`;
+    navigator.clipboard.writeText(text);
+    toast({ description: `Đã sao chép tài khoản của ${user.fullName}` });
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex items-center gap-4">
@@ -199,25 +209,26 @@ const ClassRoster: React.FC<ClassRosterProps> = ({
         </Card>
       )}
 
-      <Card className="rounded-3xl shadow-lg shadow-primary/5">
+      <Card className="rounded-3xl shadow-lg shadow-primary/5 overflow-hidden">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Danh sách lớp</CardTitle>
             <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={handleExportStudentsExcel} className="rounded-xl">
-                  <FileDown className="mr-2 h-4 w-4" /> Xuất danh sách HS
+                <Button variant="outline" size="sm" onClick={handleExportStudentsExcel} className="rounded-xl font-bold">
+                  <FileDown className="mr-2 h-4 w-4" /> Xuất Excel
                 </Button>
                 {selectedStudents.length > 0 && (
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="sm" className="rounded-xl">
+                            <Button variant="destructive" size="sm" className="rounded-xl font-bold">
                                 <Trash2 className="mr-2 h-4 w-4" /> Xóa ({selectedStudents.length})
                             </Button>
                         </AlertDialogTrigger>
-                        <AlertDialogContent>
+                        <AlertDialogContent className="rounded-3xl">
                             <AlertDialogHeader><AlertDialogTitle>Xóa học sinh đã chọn?</AlertDialogTitle></AlertDialogHeader>
+                            <AlertDialogDescription>Bạn có chắc chắn muốn xóa {selectedStudents.length} học sinh? Thao tác này không thể hoàn tác.</AlertDialogDescription>
                             <AlertDialogFooter>
-                                <AlertDialogCancel>Hủy</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleConfirmBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Xóa</AlertDialogAction>
+                                <AlertDialogCancel className="rounded-xl">Hủy</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleConfirmBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl">Xóa vĩnh viễn</AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
@@ -225,46 +236,75 @@ const ClassRoster: React.FC<ClassRosterProps> = ({
             </div>
         </CardHeader>
         <CardContent className="p-0">
-          {students.length > 0 && (
-            <div className="flex items-center p-4 border-b">
-              <Checkbox
-                id="select-all"
-                checked={selectedStudents.length > 0 && selectedStudents.length === students.length}
-                onCheckedChange={(checked) => setSelectedStudents(checked ? students.map((s) => s.id) : [])}
-              />
-              <label htmlFor="select-all" className="ml-3 text-sm font-medium">Chọn tất cả ({students.length} học sinh)</label>
-            </div>
-          )}
-          <div className="grid grid-cols-1 gap-4 p-4">
-            {students.map(s => (
-              <div key={s.id} className="p-4 bg-background rounded-2xl flex flex-col md:flex-row md:items-center justify-between group transition-all border-2 border-transparent hover:border-primary/20 hover:shadow-md gap-4">
-                <div className="flex items-center gap-4 flex-1">
-                  <Checkbox
-                    id={`student-${s.id}`}
-                    checked={selectedStudents.includes(s.id)}
-                    onCheckedChange={(checked) => setSelectedStudents(prev => checked ? [...prev, s.id] : prev.filter(id => id !== s.id))}
-                  />
-                  <div className="flex items-center gap-4 cursor-pointer">
-                    <Avatar><AvatarFallback><UserIcon /></AvatarFallback></Avatar>
-                    <div>
-                      <h4 className="font-bold text-foreground text-lg">{s.fullName}</h4>
-                      <span className="text-xs text-muted-foreground font-mono">@{s.username}</span>
+          <div className="flex items-center p-4 border-b bg-muted/30">
+            <Checkbox
+              id="select-all"
+              checked={selectedStudents.length > 0 && selectedStudents.length === students.length}
+              onCheckedChange={(checked) => setSelectedStudents(checked ? students.map((s) => s.id) : [])}
+            />
+            <Label htmlFor="select-all" className="ml-3 text-sm font-black uppercase tracking-widest cursor-pointer">Chọn tất cả ({students.length} học sinh)</Label>
+          </div>
+          
+          <ScrollArea className="h-[600px] w-full bg-muted/10 p-4">
+            <div className="grid grid-cols-1 gap-4">
+              {students.map(s => (
+                <div key={s.id} className={`group relative p-5 rounded-2xl border-2 transition-all flex flex-col md:flex-row md:items-center gap-4 ${selectedStudents.includes(s.id) ? 'bg-primary/5 border-primary shadow-md' : 'bg-card border-transparent hover:border-primary/20 hover:shadow-sm'}`}>
+                  <div className="absolute top-4 right-4 md:static md:order-first z-10">
+                    <Checkbox
+                      checked={selectedStudents.includes(s.id)}
+                      onCheckedChange={(checked) => setSelectedStudents(prev => checked ? [...prev, s.id] : prev.filter(id => id !== s.id))}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center font-black text-primary flex-shrink-0">
+                        {s.fullName.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="font-black text-foreground text-lg truncate leading-tight">{s.fullName}</h4>
+                      <p className="text-xs text-muted-foreground/70 truncate">@{s.username}</p>
+                      {s.passwordUpdatedAt && (
+                        <p className="text-[10px] text-muted-foreground/60 flex items-center mt-1">
+                          <Clock className="w-2.5 h-2.5 mr-1" />
+                          MK cập nhật: {format(parseISO(s.passwordUpdatedAt), "HH:mm, dd/MM", { locale: vi })}
+                        </p>
+                      )}
                     </div>
                   </div>
+                  
+                  <div className="flex-[1.5] space-y-1">
+                    <div className="text-[10px] uppercase font-black tracking-widest text-muted-foreground/60 flex justify-between">
+                      <span>Thông tin tài khoản</span>
+                      <Button variant="ghost" size="icon" className="h-4 w-4" onClick={() => handleCopyCredentials(s)} title="Sao chép tài khoản">
+                        <Copy className="h-2.5 w-2.5" />
+                      </Button>
+                    </div>
+                    <div className="bg-muted/50 p-2.5 rounded-xl text-xs flex justify-between items-center gap-4 border border-border/30">
+                        <span className="font-mono text-foreground/80 truncate">TK: {s.username}</span>
+                        <span className="font-black text-primary flex-shrink-0">MK: {s.password}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 pt-1 md:pt-0 border-t md:border-t-0 border-border/50">
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => onDeleteStudents([s.id])} 
+                        className="flex-1 md:flex-none h-9 px-4 rounded-lg text-[10px] font-black uppercase tracking-tighter text-destructive hover:bg-destructive/10"
+                    >
+                        <Trash2 className="mr-1 h-3 w-3" /> Xóa
+                    </Button>
+                  </div>
                 </div>
-                
-                <div className="flex-1 bg-muted/30 p-2 rounded-xl text-xs flex justify-between items-center gap-4">
-                    <span className="font-mono text-muted-foreground truncate">TK: {s.username}</span>
-                    <span className="font-black text-primary flex-shrink-0">MK: {s.password}</span>
+              ))}
+              {students.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+                    <LayoutGrid className="h-12 w-12 opacity-10 mb-4" />
+                    <p className="italic font-medium">Lớp học chưa có học sinh nào.</p>
                 </div>
-              </div>
-            ))}
-            {students.length === 0 && (
-              <div className="text-center py-20 text-muted-foreground italic">
-                Lớp học chưa có học sinh nào.
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          </ScrollArea>
         </CardContent>
       </Card>
     </div>
