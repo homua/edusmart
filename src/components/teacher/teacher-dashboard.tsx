@@ -171,13 +171,13 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                     {assignment.subject}
                   </Badge>
                   {isCompleted ? (
-                    <Badge className="bg-accent/20 text-accent-foreground border-none text-[10px] uppercase font-black px-2 py-0.5">Hoàn thành</Badge>
+                    <Badge className="bg-accent/20 text-accent border-none text-[10px] uppercase font-black px-2 py-0.5">Hoàn thành</Badge>
                   ) : status === 'NOT_STARTED' ? (
                     <Badge variant="secondary" className="text-[10px] uppercase font-black px-2 py-0.5">Chưa đến giờ</Badge>
                   ) : status === 'EXPIRED' ? (
                     <Badge variant="destructive" className="text-[10px] uppercase font-black px-2 py-0.5">Đã kết thúc</Badge>
                   ) : (
-                    <Badge className="bg-primary/20 text-primary-foreground border-none text-[10px] uppercase font-black px-2 py-0.5">Đang giao</Badge>
+                    <Badge className="bg-primary/20 text-primary border-none text-[10px] uppercase font-black px-2 py-0.5">Đang giao</Badge>
                   )}
                 </div>
                 <CardTitle className="text-xl font-black text-foreground group-hover:text-primary transition-colors leading-tight">
