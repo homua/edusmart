@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Users, Trash2, FileText, PieChart, Pencil, KeyRound, Clock, Calendar } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isAfter } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -145,13 +145,29 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
           const targetStudentsCount = students.filter(s => assignment.classIds.includes(s.classId || '')).length;
           const isCompleted = assignmentSubmissions.length >= targetStudentsCount && targetStudentsCount > 0;
           
+          const now = new Date();
+          const isExpired = assignment.endDate ? isAfter(now, parseISO(assignment.endDate)) : false;
+
+          let statusLabel = 'Đang giao';
+          let badgeVariant: "default" | "secondary" | "destructive" | "outline" = "secondary";
+          let badgeClass = "";
+
+          if (isExpired) {
+            statusLabel = 'Đã kết thúc';
+            badgeVariant = "destructive";
+          } else if (isCompleted) {
+            statusLabel = 'Hoàn thành';
+            badgeVariant = "default";
+            badgeClass = "bg-accent text-accent-foreground";
+          }
+
           return (
             <Card key={assignment.id} className="rounded-3xl shadow-lg shadow-primary/5 flex flex-col border-primary/10 hover:border-primary/30 transition-all group">
               <CardHeader>
                 <div className="flex justify-between items-start mb-2">
                   <Badge className="bg-primary/10 text-primary border-none text-[10px] uppercase font-black px-2">{assignment.subject}</Badge>
-                  <Badge variant={isCompleted ? "default" : "secondary"} className={`${isCompleted ? "bg-accent text-accent-foreground" : ""} text-[10px] uppercase font-black`}>
-                    {isCompleted ? 'Hoàn thành' : 'Đang giao'}
+                  <Badge variant={badgeVariant} className={`${badgeClass} text-[10px] uppercase font-black`}>
+                    {statusLabel}
                   </Badge>
                 </div>
                 <CardTitle className="leading-tight text-xl group-hover:text-primary transition-colors">{assignment.title}</CardTitle>
