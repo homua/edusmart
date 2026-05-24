@@ -59,7 +59,16 @@ const MainApp: React.FC = () => {
     return [...classesData].sort((a, b) => a.name.localeCompare(b.name, 'vi', { numeric: true }));
   }, [classesData]);
 
-  const assignments = assignmentsData || [];
+  // Sort assignments by creation date (newest first)
+  const assignments = useMemo(() => {
+    if (!assignmentsData) return [];
+    return [...assignmentsData].sort((a, b) => {
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+      return dateB - dateA;
+    });
+  }, [assignmentsData]);
+
   const submissions = submissionsData || [];
 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
