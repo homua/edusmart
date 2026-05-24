@@ -10,13 +10,14 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Trash2, Upload, Download, UserPlus, Pencil, FileDown, ChevronDown, BarChart3, Users, BookOpen, CheckCircle2, Calendar, LayoutGrid } from 'lucide-react';
+import { Plus, Trash2, Upload, Download, UserPlus, Pencil, FileDown, ChevronDown, BarChart3, Users, BookOpen, CheckCircle2, Calendar, LayoutGrid, Search } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import * as XLSX from 'xlsx';
 import { subDays, isAfter, parseISO } from 'date-fns';
 
@@ -370,7 +371,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <TabsContent value="students" className="mt-6 space-y-6">
                   <div className="flex flex-col md:flex-row gap-4 items-end">
                     <div className="flex-1 space-y-2">
-                        <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Lọc theo lớp (Mũi tên sổ xuống)</Label>
+                        <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Lọc theo lớp</Label>
                         <Select value={selectedClassId} onValueChange={setSelectedClassId}>
                             <SelectTrigger className="w-full h-14 rounded-2xl border-2 border-primary/10 focus:border-primary transition-all px-6 text-lg font-bold bg-background">
                             <div className="flex justify-between items-center w-full pr-4">
@@ -400,18 +401,26 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             </SelectContent>
                         </Select>
                     </div>
+                    <div className="flex items-center gap-2 h-14 bg-muted/30 px-4 rounded-2xl border border-border/50">
+                        <Checkbox 
+                            id="select-all-students"
+                            checked={selectedStudents.length > 0 && currentStudentList.length > 0 && selectedStudents.length === currentStudentList.length} 
+                            onCheckedChange={(checked) => setSelectedStudents(checked ? currentStudentList.map((s) => s.id) : [])}
+                        />
+                        <Label htmlFor="select-all-students" className="text-xs font-bold cursor-pointer whitespace-nowrap">Chọn tất cả</Label>
+                    </div>
                     {selectedStudents.length > 0 && (
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button variant="destructive" className="h-14 rounded-2xl px-6 font-bold">
                               <Trash2 className="mr-2 h-5 w-5" />
-                              Xóa đã chọn ({selectedStudents.length})
+                              Xóa ({selectedStudents.length})
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent className="rounded-3xl">
                             <AlertDialogHeader>
                               <AlertDialogTitle>Xác nhận xóa học sinh</AlertDialogTitle>
-                              <AlertDialogDescription>Bạn chắc chắn muốn xóa {selectedStudents.length} học sinh đã chọn khỏi hệ thống? Thao tác này không thể hoàn tác.</AlertDialogDescription>
+                              <AlertDialogDescription>Bạn chắc chắn muốn xóa {selectedStudents.length} học sinh đã chọn? Thao tác này không thể hoàn tác.</AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel className="rounded-xl">Hủy</AlertDialogCancel>
@@ -422,42 +431,63 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       )}
                   </div>
                   
-                  <div className="rounded-2xl border border-border/50 overflow-hidden bg-card/50">
-                    <Table>
-                        <TableHeader className="bg-muted/30">
-                            <TableRow className="hover:bg-transparent border-b-2">
-                                <TableHead className="w-12 px-6"><Checkbox checked={selectedStudents.length > 0 && currentStudentList.length > 0 && selectedStudents.length === currentStudentList.length} onCheckedChange={(checked) => setSelectedStudents(checked ? currentStudentList.map((s) => s.id) : [])}/></TableHead>
-                                <TableHead className="font-black uppercase tracking-widest text-[10px] text-muted-foreground px-6 py-4">Số lượng học sinh dạng mũi tên sổ xuống</TableHead>
-                                <TableHead className="font-black uppercase tracking-widest text-[10px] text-muted-foreground px-6 py-4 text-right">Hành động</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {currentStudentList.map(user => (
-                                <TableRow key={user.id} data-state={selectedStudents.includes(user.id) ? 'selected' : ''} className="hover:bg-primary/5 transition-colors">
-                                    <TableCell className="px-6"><Checkbox checked={selectedStudents.includes(user.id)} onCheckedChange={() => handleToggleStudentSelection(user.id)}/></TableCell>
-                                    <TableCell className="px-6 py-4">
-                                        <div className="font-bold text-lg text-foreground">{user.fullName}</div>
-                                        <div className="flex items-center gap-2 mt-1">
-                                            <span className="text-xs font-medium text-muted-foreground/70 bg-muted px-2 py-0.5 rounded-md">@{user.username}</span>
-                                            <span className="text-xs font-medium text-muted-foreground/70 bg-muted px-2 py-0.5 rounded-md">Mật khẩu: <b className="text-foreground">{user.password}</b></span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="px-6 py-4 text-right">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <Button variant="ghost" size="icon" onClick={() => handleOpenEditUserModal(user)} className="rounded-full hover:bg-primary/10 hover:text-primary"><Pencil className="h-4 w-4" /></Button>
-                                            <Button variant="ghost" size="icon" onClick={() => onDeleteUser(user)} className="text-destructive hover:bg-destructive/10 rounded-full"><Trash2 className="h-4 w-4" /></Button>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                            {currentStudentList.length === 0 && (
-                                <TableRow>
-                                    <TableCell colSpan={3} className="text-center py-20 text-muted-foreground italic">Không có học sinh nào trong mục này.</TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                  </div>
+                  <ScrollArea className="h-[500px] w-full rounded-2xl border border-border/50 bg-muted/10 p-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {currentStudentList.map(user => (
+                        <div key={user.id} className={`group relative p-5 rounded-2xl border-2 transition-all flex flex-col gap-3 ${selectedStudents.includes(user.id) ? 'bg-primary/5 border-primary shadow-md' : 'bg-card border-transparent hover:border-primary/20 hover:shadow-sm'}`}>
+                          <div className="absolute top-4 right-4 z-10">
+                            <Checkbox 
+                                checked={selectedStudents.includes(user.id)} 
+                                onCheckedChange={() => handleToggleStudentSelection(user.id)} 
+                            />
+                          </div>
+                          
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center font-black text-primary">
+                                {user.fullName.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="font-black text-foreground truncate leading-tight">{user.fullName}</p>
+                                <p className="text-xs text-muted-foreground/70 truncate">@{user.username}</p>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1 mt-auto">
+                            <div className="text-[10px] uppercase font-black tracking-widest text-muted-foreground/60">Tài khoản & Mật khẩu</div>
+                            <div className="bg-muted/50 p-2 rounded-xl text-xs flex justify-between items-center">
+                                <span className="font-mono text-foreground/80">{user.username}</span>
+                                <span className="font-black text-primary">{user.password}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-2 pt-1 border-t border-border/50">
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => handleOpenEditUserModal(user)} 
+                                className="flex-1 h-8 rounded-lg text-[10px] font-black uppercase tracking-tighter hover:bg-primary/10 hover:text-primary"
+                            >
+                                <Pencil className="mr-1 h-3 w-3" /> Sửa
+                            </Button>
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => onDeleteUser(user)} 
+                                className="flex-1 h-8 rounded-lg text-[10px] font-black uppercase tracking-tighter text-destructive hover:bg-destructive/10"
+                            >
+                                <Trash2 className="mr-1 h-3 w-3" /> Xóa
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                      {currentStudentList.length === 0 && (
+                        <div className="col-span-full flex flex-col items-center justify-center py-20 text-muted-foreground">
+                            <LayoutGrid className="h-12 w-12 opacity-10 mb-4" />
+                            <p className="italic font-medium">Không có học sinh nào trong mục này.</p>
+                        </div>
+                      )}
+                    </div>
+                  </ScrollArea>
                 </TabsContent>
                 
                 <TabsContent value="teachers" className="mt-6 space-y-4">
