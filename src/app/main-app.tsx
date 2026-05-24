@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -44,10 +43,14 @@ const MainApp: React.FC = () => {
   const { data: assignmentsData, isLoading: assignmentsLoading } = useCollection<Assignment>(assignmentsCollection);
   const { data: submissionsData, isLoading: submissionsLoading } = useCollection<Submission>(submissionsCollection);
   
-  // Sort users alphabetically by fullName
+  // Sort users alphabetically by the last word of fullName (First Name in Vietnamese context)
   const users = useMemo(() => {
     if (!usersData) return [];
-    return [...usersData].sort((a, b) => a.fullName.localeCompare(b.fullName, 'vi'));
+    return [...usersData].sort((a, b) => {
+      const nameA = a.fullName.trim().split(' ').pop() || '';
+      const nameB = b.fullName.trim().split(' ').pop() || '';
+      return nameA.localeCompare(nameB, 'vi');
+    });
   }, [usersData]);
 
   // Sort classes by name numerically (e.g., 6A1, 6A2, 6A10)
