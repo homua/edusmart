@@ -6,7 +6,7 @@ import type { User, Class, Assignment, Submission } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Users, Trash2, FileText, PieChart, Pencil, KeyRound, Clock, Calendar, CheckCircle, AlertCircle } from 'lucide-react';
+import { Plus, Users, Trash2, FileText, PieChart, Pencil, KeyRound, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { format, parseISO, isAfter, isBefore } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -107,7 +107,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                 <KeyRound className="mr-2 h-4 w-4" /> Đổi mật khẩu
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="rounded-3xl">
               <DialogHeader>
                 <DialogTitle>Đổi mật khẩu cá nhân</DialogTitle>
                 <DialogDescription>Nhập mật khẩu mới để bảo mật tài khoản của bạn.</DialogDescription>
@@ -135,7 +135,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                     className="rounded-xl"
                   />
                 </div>
-                <Button type="submit" className="w-full rounded-xl py-6" disabled={isUpdating}>
+                <Button type="submit" className="w-full rounded-xl py-6 font-bold" disabled={isUpdating}>
                   {isUpdating ? "Đang cập nhật..." : "Lưu mật khẩu mới"}
                 </Button>
               </form>
@@ -147,7 +147,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
               <Users className="mr-2 h-4 w-4" /> Quản lý lớp
             </Button>
           )}
-          <Button onClick={onCreateNew} className="rounded-xl">
+          <Button onClick={onCreateNew} className="rounded-xl font-bold">
             <Plus className="mr-2 h-4 w-4" /> Tạo bài tập mới
           </Button>
         </div>
@@ -188,18 +188,32 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-grow">
-                 <div className={`p-4 rounded-2xl border transition-all ${isCompleted ? 'bg-accent/10 border-accent/20 text-accent-foreground' : 'bg-muted/40 border-border/50'}`}>
+                 <div className={`p-4 rounded-2xl border transition-all ${
+                   isCompleted 
+                    ? 'bg-accent/10 border-accent/20 text-accent-foreground' 
+                    : status === 'NOT_STARTED'
+                      ? 'bg-muted/50 border-border/50 text-muted-foreground'
+                      : status === 'EXPIRED'
+                        ? 'bg-destructive/5 border-destructive/10 text-destructive'
+                        : 'bg-primary/5 border-primary/10 text-primary'
+                 }`}>
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2 font-bold text-sm">
-                        {isCompleted ? <CheckCircle className="w-4 h-4" /> : <Users className="w-4 h-4 text-muted-foreground" />}
+                        {isCompleted ? <CheckCircle className="w-4 h-4" /> : <Users className="w-4 h-4" />}
                         {isCompleted ? "Tất cả đã nộp" : "Tiến độ nộp bài"}
                       </div>
                       <span className="text-lg font-black">{assignmentSubmissions.length} / {targetStudentsCount}</span>
                     </div>
                     {targetStudentsCount > 0 && (
-                      <div className="w-full bg-muted-foreground/10 rounded-full h-1.5 overflow-hidden">
+                      <div className="w-full bg-black/5 dark:bg-white/10 rounded-full h-1.5 overflow-hidden">
                         <div 
-                          className={`h-full transition-all ${isCompleted ? 'bg-accent' : 'bg-primary'}`} 
+                          className={`h-full transition-all ${
+                            isCompleted 
+                              ? 'bg-accent' 
+                              : status === 'EXPIRED'
+                                ? 'bg-destructive'
+                                : 'bg-primary'
+                          }`} 
                           style={{ width: `${(assignmentSubmissions.length / targetStudentsCount) * 100}%` }}
                         />
                       </div>
