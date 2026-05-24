@@ -6,6 +6,7 @@ import type { Assignment, Submission } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface SubmissionReviewProps {
   assignment: Assignment;
@@ -28,54 +29,56 @@ const SubmissionReview: React.FC<SubmissionReviewProps> = ({ assignment, submiss
         </div>
       </div>
 
-      <div className="space-y-6">
-        {assignment.questions.map((q, index) => {
-          const studentAnswer = submission.answers.find(a => a.questionId === q.id);
-          const isCorrect = studentAnswer?.answer.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase();
-          
-          return (
-            <Card key={q.id} className="rounded-3xl shadow-lg shadow-primary/5">
-              <CardHeader>
-                <CardTitle className="text-lg">Câu {index + 1}: {q.text}</CardTitle>
-                <CardDescription>{q.points} điểm</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 bg-muted/50 rounded-xl">
-                    <p className="text-xs font-black uppercase text-muted-foreground mb-1 tracking-widest">Câu trả lời của bạn</p>
-                    <div className="flex items-center gap-2">
-                      {isCorrect ? <CheckCircle className="text-accent h-5 w-5" /> : <XCircle className="text-destructive h-5 w-5" />}
-                      <p className="font-bold">{studentAnswer?.answer || '(Chưa trả lời)'}</p>
+      <ScrollArea className="h-[calc(100vh-250px)] w-full rounded-3xl pr-4">
+        <div className="space-y-6 pb-10">
+          {assignment.questions.map((q, index) => {
+            const studentAnswer = submission.answers.find(a => a.questionId === q.id);
+            const isCorrect = studentAnswer?.answer.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase();
+            
+            return (
+              <Card key={q.id} className="rounded-3xl shadow-lg shadow-primary/5 border-primary/5">
+                <CardHeader>
+                  <CardTitle className="text-lg">Câu {index + 1}: {q.text}</CardTitle>
+                  <CardDescription className="font-bold text-primary">{q.points} điểm</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 bg-muted/50 rounded-xl border border-border/50">
+                      <p className="text-[10px] font-black uppercase text-muted-foreground mb-2 tracking-widest">Câu trả lời của bạn</p>
+                      <div className="flex items-center gap-2">
+                        {isCorrect ? <CheckCircle className="text-accent h-5 w-5" /> : <XCircle className="text-destructive h-5 w-5" />}
+                        <p className="font-bold">{studentAnswer?.answer || '(Chưa trả lời)'}</p>
+                      </div>
+                    </div>
+                    <div className="p-4 bg-primary/5 border border-primary/10 rounded-xl">
+                      <p className="text-[10px] font-black uppercase text-primary/60 mb-2 tracking-widest">Đáp án đúng</p>
+                      <p className="font-bold text-primary">{q.correctAnswer}</p>
                     </div>
                   </div>
-                  <div className="p-4 bg-primary/5 border border-primary/10 rounded-xl">
-                    <p className="text-xs font-black uppercase text-primary/60 mb-1 tracking-widest">Đáp án đúng</p>
-                    <p className="font-bold text-primary">{q.correctAnswer}</p>
-                  </div>
-                </div>
-                {q.type === 'MULTIPLE_CHOICE' && (
-                  <div className="flex flex-wrap gap-2">
-                    {q.options?.map((opt, i) => (
-                      <div 
-                        key={i} 
-                        className={`px-3 py-1 rounded-full text-xs border ${
-                          opt === q.correctAnswer 
-                            ? 'bg-primary/10 border-primary text-primary font-bold' 
-                            : opt === studentAnswer?.answer 
-                              ? 'bg-destructive/10 border-destructive text-destructive' 
-                              : 'bg-muted border-transparent text-muted-foreground'
-                        }`}
-                      >
-                        {opt}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                  {q.type === 'MULTIPLE_CHOICE' && (
+                    <div className="flex flex-wrap gap-2">
+                      {q.options?.map((opt, i) => (
+                        <div 
+                          key={i} 
+                          className={`px-3 py-1 rounded-full text-[10px] border font-bold uppercase tracking-tighter ${
+                            opt === q.correctAnswer 
+                              ? 'bg-primary/10 border-primary text-primary' 
+                              : opt === studentAnswer?.answer 
+                                ? 'bg-destructive/10 border-destructive text-destructive' 
+                                : 'bg-muted border-transparent text-muted-foreground'
+                          }`}
+                        >
+                          {opt}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </ScrollArea>
     </div>
   );
 };
