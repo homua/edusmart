@@ -135,11 +135,10 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
       }
 
       // Map generated questions back to our app's internal QuestionType
-      // And ensure that if aiCategory is TEXT, we force the type to TEXT
       const mappedQuestions: Question[] = newQuestions.map(q => ({
           ...q,
           type: (aiCategory === 'TEXT' ? QuestionType.TEXT : q.type) as QuestionType,
-          options: aiCategory === 'TEXT' ? [] : (q.options || [])
+          options: (aiCategory === 'TEXT' || (q.type === QuestionType.MULTIPLE_CHOICE && (!q.options || q.options.length === 0))) ? [] : (q.options || [])
       }));
       setQuestions(prev => [...prev, ...mappedQuestions]);
       toast({ 
@@ -312,11 +311,12 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
                   </div>
                 ))}
                  <Button variant="outline" size="sm" onClick={() => updateQuestion(index, { options: [...(q.options || []), ''] })}>Thêm lựa chọn</Button>
+                 {q.options && q.options.length === 0 && <p className="text-[10px] text-muted-foreground italic">Dạng Trả lời ngắn: Không cần điền lựa chọn.</p>}
               </div>
             )}
             <div className="space-y-2 col-span-2">
                 <Label>Đáp án đúng</Label>
-                {q.type === 'MULTIPLE_CHOICE' ? (
+                {(q.type === 'MULTIPLE_CHOICE' && q.options && q.options.length > 0) ? (
                      <Select value={q.correctAnswer} onValueChange={v => updateQuestion(index, { correctAnswer: v })}>
                         <SelectTrigger className="rounded-xl"><SelectValue placeholder="Chọn đáp án đúng" /></SelectTrigger>
                         <SelectContent>

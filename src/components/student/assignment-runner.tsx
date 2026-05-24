@@ -67,17 +67,9 @@ const AssignmentRunner: React.FC<AssignmentRunnerProps> = ({
       let score = 0;
       const submissionAnswers = assignment.questions.map(q => {
         const studentAnswer = answers[q.id] || '';
-        // Basic grading for multiple choice
-        if (q.type === 'MULTIPLE_CHOICE') {
-          if (studentAnswer.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase()) {
-            score += q.points;
-          }
-        } else {
-          // For text, we can't auto-grade perfectly, but we'll assign points if it's not empty for now
-          // or rely on exact match if available. MVP logic: exact match.
-          if (studentAnswer.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase()) {
-            score += q.points;
-          }
+        // Basic grading
+        if (studentAnswer.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase()) {
+          score += q.points;
         }
         return { questionId: q.id, answer: studentAnswer };
       });
@@ -108,6 +100,9 @@ const AssignmentRunner: React.FC<AssignmentRunnerProps> = ({
   
   const progress = ((currentQuestionIndex + 1) / totalQuestions) * 100;
 
+  // Determine if it's an objective question with options or a fill-in-the-blank/essay
+  const isObjectiveWithOptions = currentQuestion.type === 'MULTIPLE_CHOICE' && currentQuestion.options && currentQuestion.options.length > 0;
+
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in duration-500 pb-20">
       <div className="text-center">
@@ -127,7 +122,7 @@ const AssignmentRunner: React.FC<AssignmentRunnerProps> = ({
           </div>
         </CardHeader>
         <CardContent>
-          {currentQuestion.type === 'MULTIPLE_CHOICE' ? (
+          {isObjectiveWithOptions ? (
             <RadioGroup
               value={answers[currentQuestion.id]}
               onValueChange={(val) => handleAnswerChange(currentQuestion.id, val)}
@@ -141,12 +136,17 @@ const AssignmentRunner: React.FC<AssignmentRunnerProps> = ({
               ))}
             </RadioGroup>
           ) : (
-            <Textarea
-              value={answers[currentQuestion.id] || ''}
-              onChange={(e) => handleAnswerChange(currentQuestion.id, e.target.value)}
-              placeholder="Nhập câu trả lời của bạn tại đây..."
-              className="min-h-[180px] rounded-2xl text-lg p-6 bg-muted/30 border-2 focus:border-primary transition-all"
-            />
+            <div className="space-y-4">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                {currentQuestion.type === 'MULTIPLE_CHOICE' ? 'Nhập câu trả lời ngắn của bạn:' : 'Nhập nội dung bài làm tự luận:'}
+              </p>
+              <Textarea
+                value={answers[currentQuestion.id] || ''}
+                onChange={(e) => handleAnswerChange(currentQuestion.id, e.target.value)}
+                placeholder={currentQuestion.type === 'MULTIPLE_CHOICE' ? "Câu trả lời của bạn..." : "Nhập câu trả lời của bạn tại đây..."}
+                className={currentQuestion.type === 'MULTIPLE_CHOICE' ? "min-h-[100px] rounded-2xl text-lg p-6 bg-muted/30 border-2 focus:border-primary transition-all" : "min-h-[180px] rounded-2xl text-lg p-6 bg-muted/30 border-2 focus:border-primary transition-all"}
+              />
+            </div>
           )}
         </CardContent>
       </Card>

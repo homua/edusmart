@@ -34,8 +34,8 @@ export type GenerateQuestionsInput = z.infer<typeof GenerateQuestionsInputSchema
 const QuestionSchema = z.object({
     id: z.string().describe("A unique identifier for the question"),
     text: z.string().describe("The text content of the question."),
-    type: z.enum(['MULTIPLE_CHOICE', 'TEXT']).describe("The application type: MULTIPLE_CHOICE for objective/options based, TEXT for subjective/written answers."),
-    options: z.array(z.string()).optional().describe("An array of possible answers. MUST be omitted or empty for type 'TEXT'."),
+    type: z.enum(['MULTIPLE_CHOICE', 'TEXT']).describe("The application type: MULTIPLE_CHOICE for objective/options based or short answers, TEXT for subjective/written essays."),
+    options: z.array(z.string()).optional().describe("An array of possible answers. MUST be omitted or empty for type 'TEXT' or 'SHORT_ANSWER'."),
     correctAnswer: z.string().describe("The correct answer. For 'TEXT', provide a model answer."),
     points: z.number().describe("The number of points this question is worth.")
 });
@@ -52,7 +52,7 @@ const generateQuestionsPrompt = ai.definePrompt({
   name: 'generateQuestionsPrompt',
   input: {schema: GenerateQuestionsInputSchema},
   output: {schema: GenerateQuestionsOutputSchema},
-  prompt: `Bạn là một trợ lý chuyên gia thiết kế chương trình giảng dạy của Việt Nam.
+  prompt: `Bạn là một trợ lý chuyên gia thiết kế chương trình giảng duy của Việt Nam.
 Nhiệm vụ: Tạo ra chính xác {{count}} câu hỏi cho bài tập "{{title}}" thuộc môn {{subject}} với độ khó {{difficulty}}.
 
 QUY TẮC BẮT BUỘC về dạng câu hỏi (Dựa trên yêu cầu: {{questionType}}):
@@ -71,12 +71,12 @@ QUY TẮC BẮT BUỘC về dạng câu hỏi (Dựa trên yêu cầu: {{questio
    - Trường "options" PHẢI chỉ có 2 lựa chọn: ["Đúng", "Sai"].
 
 4. NẾU yêu cầu là 'SHORT_ANSWER' (Trả lời ngắn):
-   - Bạn PHẢI đặt "type": "TEXT".
-   - Bạn KHÔNG ĐƯỢC cung cấp trường "options".
-   - "correctAnswer" là từ hoặc cụm từ ngắn gọn.
+   - Bạn PHẢI đặt "type": "MULTIPLE_CHOICE" (Vì đây là dạng trắc nghiệm khách quan).
+   - Bạn PHẢI để trường "options" là mảng rỗng [].
+   - "correctAnswer" là từ hoặc cụm từ ngắn gọn, chính xác duy nhất.
 
 5. NẾU yêu cầu là 'ALL_MCQ' (Tổng hợp trắc nghiệm):
-   - Tạo hỗn hợp các dạng MCQ_4, TRUE_FALSE. 
+   - Tạo hỗn hợp các dạng MCQ_4, TRUE_FALSE, SHORT_ANSWER. 
    - KHÔNG tạo câu hỏi tự luận dài trong phần này.
 
 Quy tắc chung:
@@ -97,14 +97,27 @@ const generateQuestionsFlow = ai.defineFlow(
     if (!output) {
       throw new Error("AI không tạo được câu hỏi. Hãy thử lại với tiêu đề hoặc môn học rõ ràng hơn.");
     }
-    // Đảm bảo dữ liệu nhất quán sau khi nhận từ AI
+    
     return output.map(q => {
-      const isText = input.questionType === 'TEXT' || q.type === 'TEXT';
+      // Logic xác định loại câu hỏi cuối cùng
+      let finalType = q.type;
+      let finalOptions = q.options || [];
+
+      if (input.questionType === 'TEXT') {
+          finalType = 'TEXT';
+          finalOptions = [];
+      } else if (input.questionType === 'SHORT_ANSWER') {
+          finalType = 'MULTIPLE_CHOICE';
+          finalOptions = [];
+      } else if (input.questionType !== 'ALL_MCQ' && input.questionType !== 'TEXT') {
+          finalType = 'MULTIPLE_CHOICE';
+      }
+
       return {
         ...q, 
         id: `q_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-        type: isText ? 'TEXT' : 'MULTIPLE_CHOICE',
-        options: isText ? [] : (q.options || [])
+        type: finalType,
+        options: finalOptions
       };
     });
   }
