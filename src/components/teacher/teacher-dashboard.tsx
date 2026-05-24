@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -88,7 +89,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
       return { status: 'NOT_STARTED', message: `Bắt đầu: ${format(start, "HH:mm, dd/MM", { locale: vi })}` };
     }
     if (end && isAfter(now, end)) {
-      return { status: 'EXPIRED', message: `Đã hết hạn: ${format(end, "HH:mm, dd/MM", { locale: vi })}` };
+      return { status: 'EXPIRED', message: `Hết hạn: ${format(end, "HH:mm, dd/MM", { locale: vi })}` };
     }
     return { status: 'ACTIVE', message: end ? `Hết hạn: ${format(end, "HH:mm, dd/MM", { locale: vi })}` : 'Không giới hạn thời gian' };
   };
@@ -97,13 +98,13 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-foreground">Bảng điều khiển Giáo viên</h1>
+          <h1 className="text-3xl font-black text-foreground uppercase tracking-tight">Bảng điều khiển Giáo viên</h1>
           <p className="text-muted-foreground">Lớp chủ nhiệm: <span className="font-bold text-primary">{classNamesText || 'Chưa gán'}</span></p>
         </div>
         <div className="flex items-center gap-2">
           <Dialog open={isPasswordModalOpen} onOpenChange={setIsPasswordModalOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="rounded-xl">
+              <Button variant="outline" className="rounded-xl border-2">
                 <KeyRound className="mr-2 h-4 w-4" /> Đổi mật khẩu
               </Button>
             </DialogTrigger>
@@ -121,7 +122,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                     value={newPassword} 
                     onChange={e => setNewPassword(e.target.value)} 
                     placeholder="Nhập mật khẩu mới"
-                    className="rounded-xl"
+                    className="rounded-xl h-12"
                   />
                 </div>
                 <div className="space-y-2">
@@ -132,10 +133,10 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                     value={confirmPassword} 
                     onChange={e => setConfirmPassword(e.target.value)} 
                     placeholder="Nhập lại mật khẩu mới"
-                    className="rounded-xl"
+                    className="rounded-xl h-12"
                   />
                 </div>
-                <Button type="submit" className="w-full rounded-xl py-6 font-bold" disabled={isUpdating}>
+                <Button type="submit" className="w-full rounded-xl py-6 font-bold shadow-lg shadow-primary/10" disabled={isUpdating}>
                   {isUpdating ? "Đang cập nhật..." : "Lưu mật khẩu mới"}
                 </Button>
               </form>
@@ -143,11 +144,11 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
           </Dialog>
 
           {managedClasses.length > 0 && (
-            <Button onClick={onViewRoster} variant="outline" className="rounded-xl">
+            <Button onClick={onViewRoster} variant="outline" className="rounded-xl border-2">
               <Users className="mr-2 h-4 w-4" /> Quản lý lớp
             </Button>
           )}
-          <Button onClick={onCreateNew} className="rounded-xl font-bold">
+          <Button onClick={onCreateNew} className="rounded-xl font-bold shadow-lg shadow-primary/20">
             <Plus className="mr-2 h-4 w-4" /> Tạo bài tập mới
           </Button>
         </div>
@@ -173,9 +174,9 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                   ) : status === 'NOT_STARTED' ? (
                     <Badge variant="secondary" className="text-[10px] uppercase font-black px-2 py-0.5">Chưa đến giờ</Badge>
                   ) : status === 'EXPIRED' ? (
-                    <Badge className="bg-accent/20 text-accent-foreground border-none text-[10px] uppercase font-black px-2 py-0.5">Đã kết thúc</Badge>
+                    <Badge variant="destructive" className="text-[10px] uppercase font-black px-2 py-0.5">Đã kết thúc</Badge>
                   ) : (
-                    <Badge className="bg-accent/20 text-accent-foreground border-none text-[10px] uppercase font-black px-2 py-0.5">Đang giao</Badge>
+                    <Badge className="bg-primary/20 text-primary-foreground border-none text-[10px] uppercase font-black px-2 py-0.5">Đang giao</Badge>
                   )}
                 </div>
                 <CardTitle className="text-xl font-black text-foreground group-hover:text-primary transition-colors leading-tight">
@@ -191,14 +192,19 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-grow pt-0">
-                 <div className="p-4 rounded-2xl border-none transition-all bg-accent/10 text-accent-foreground">
-                    <div className="flex items-center gap-2 font-bold text-sm mb-3">
-                      <CheckCircle className="w-4 h-4 opacity-80" /> 
-                      Tiến độ nộp bài
+                 <div className="p-5 rounded-2xl border-none transition-all bg-accent/10 text-accent-foreground">
+                    <div className="flex items-center justify-between font-black text-xs mb-3 uppercase tracking-wider">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 opacity-80" /> 
+                        Tiến độ nộp bài
+                      </div>
+                      <span>{completionRate}%</span>
                     </div>
                     <div className="space-y-3">
                       <div className="text-sm font-medium">
-                        Tỉ lệ: <span className="text-xl font-black">{assignmentSubmissions.length} / {targetStudentsCount}</span>
+                        <span className="text-2xl font-black">{assignmentSubmissions.length}</span>
+                        <span className="mx-1 opacity-60">/</span>
+                        <span className="text-lg opacity-80">{targetStudentsCount} HS</span>
                       </div>
                       <Progress value={completionRate} className="h-2.5 bg-background/50" />
                     </div>
