@@ -243,10 +243,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   const admins = users.filter(u => u.role === UserRole.ADMIN);
-  const studentsByClass = classes.reduce((acc, cls) => {
-    acc[cls.id] = users.filter(s => s.role === UserRole.STUDENT && s.classId === cls.id);
-    return acc;
-  }, {} as Record<string, User[]>);
+  const studentsByClass = useMemo(() => {
+    return classes.reduce((acc, cls) => {
+      acc[cls.id] = users.filter(s => s.role === UserRole.STUDENT && s.classId === cls.id);
+      return acc;
+    }, {} as Record<string, User[]>);
+  }, [classes, users]);
+
   const unassignedStudents = users.filter(s => s.role === UserRole.STUDENT && (!s.classId || !classes.some(c => c.id === s.classId)));
 
   useEffect(() => {
@@ -648,33 +651,92 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </Dialog>
             </CardHeader>
             <CardContent>
-               <div className="rounded-2xl border border-border/50 overflow-hidden bg-card/50">
-                <Table>
-                    <TableHeader className="bg-muted/30">
-                    <TableRow className="hover:bg-transparent">
-                        <TableHead className="w-12 px-6"><Checkbox checked={selectedClasses.length > 0 && selectedClasses.length === classes.length} onCheckedChange={(checked) => setSelectedClasses(checked ? classes.map(c => c.id) : [])} /></TableHead>
-                        <TableHead className="font-black uppercase tracking-widest text-[10px] text-muted-foreground px-6 py-4">Tên lớp</TableHead>
-                        <TableHead className="font-black uppercase tracking-widest text-[10px] text-muted-foreground px-6 py-4">Giáo viên quản lý</TableHead>
-                        <TableHead className="font-black uppercase tracking-widest text-[10px] text-muted-foreground px-6 py-4 text-right">Hành động</TableHead>
-                    </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                    {classes.map(cls => (
-                        <TableRow key={cls.id} className="hover:bg-primary/5 transition-colors">
-                        <TableCell className="px-6"><Checkbox checked={selectedClasses.includes(cls.id)} onCheckedChange={() => handleToggleClassSelection(cls.id)} /></TableCell>
-                        <TableCell className="px-6 py-4 font-black text-xl text-primary">{cls.name}</TableCell>
-                        <TableCell className="px-6 py-4 text-sm font-medium">{getTeachersText(cls.teacherIds || [])}</TableCell>
-                        <TableCell className="px-6 py-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                                <Button variant="ghost" size="icon" onClick={() => handleOpenEditClassModal(cls)} className="rounded-full hover:bg-primary/10 hover:text-primary"><Pencil className="h-4 w-4"/></Button>
-                                <Button variant="ghost" size="icon" onClick={() => onDeleteClasses([cls.id])} className="text-destructive hover:bg-destructive/10 rounded-full"><Trash2 className="h-4 w-4"/></Button>
+               <div className="mb-4 flex items-center gap-2 h-14 bg-muted/30 px-4 rounded-2xl border border-border/50">
+                    <Checkbox 
+                        id="select-all-classes"
+                        checked={selectedClasses.length > 0 && classes.length > 0 && selectedClasses.length === classes.length} 
+                        onCheckedChange={(checked) => setSelectedClasses(checked ? classes.map((c) => c.id) : [])}
+                    />
+                    <Label htmlFor="select-all-classes" className="text-xs font-bold cursor-pointer whitespace-nowrap">Chọn tất cả</Label>
+                    
+                    {selectedClasses.length > 0 && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="sm" className="ml-auto rounded-xl h-10 px-4 font-bold">
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Xóa ({selectedClasses.length})
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="rounded-3xl">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Xác nhận xóa lớp học</AlertDialogTitle>
+                              <AlertDialogDescription>Bạn chắc chắn muốn xóa {selectedClasses.length} lớp học đã chọn? Các học sinh thuộc lớp này sẽ trở về trạng thái "Chưa phân lớp".</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel className="rounded-xl">Hủy</AlertDialogCancel>
+                              <AlertDialogAction onClick={handleBulkDeleteClasses} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl">Xóa vĩnh viễn</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+                </div>
+
+                <ScrollArea className="h-[500px] w-full rounded-2xl border border-border/50 bg-muted/10 p-4">
+                    <div className="grid grid-cols-1 gap-4">
+                      {classes.map(cls => (
+                        <div key={cls.id} className={`group relative p-5 rounded-2xl border-2 transition-all flex flex-col md:flex-row md:items-center gap-4 ${selectedClasses.includes(cls.id) ? 'bg-primary/5 border-primary shadow-md' : 'bg-card border-transparent hover:border-primary/20 hover:shadow-sm'}`}>
+                          <div className="absolute top-4 right-4 md:static md:order-last z-10">
+                            <Checkbox 
+                                checked={selectedClasses.includes(cls.id)} 
+                                onCheckedChange={() => handleToggleClassSelection(cls.id)} 
+                            />
+                          </div>
+                          
+                          <div className="flex items-center gap-3 flex-1">
+                            <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center font-black text-primary text-xl flex-shrink-0">
+                                {cls.name.substring(0, 2)}
                             </div>
-                        </TableCell>
-                        </TableRow>
-                    ))}
-                    </TableBody>
-                </Table>
-               </div>
+                            <div className="min-w-0">
+                                <p className="font-black text-foreground truncate leading-tight text-2xl text-primary">{cls.name}</p>
+                                <p className="text-xs text-muted-foreground mt-1">Sĩ số: {studentsByClass[cls.id]?.length || 0} học sinh</p>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1 flex-[2]">
+                            <div className="text-[10px] uppercase font-black tracking-widest text-muted-foreground/60">Giáo viên quản lý</div>
+                            <div className="bg-muted/50 p-2 rounded-xl text-sm font-medium text-foreground/80">
+                                {getTeachersText(cls.teacherIds || [])}
+                            </div>
+                          </div>
+
+                          <div className="flex gap-2 pt-1 md:pt-0 border-t md:border-t-0 border-border/50">
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => handleOpenEditClassModal(cls)} 
+                                className="flex-1 md:flex-none h-9 px-4 rounded-lg text-[10px] font-black uppercase tracking-tighter hover:bg-primary/10 hover:text-primary"
+                            >
+                                <Pencil className="mr-1 h-3 w-3" /> Sửa
+                            </Button>
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => onDeleteClasses([cls.id])} 
+                                className="flex-1 md:flex-none h-9 px-4 rounded-lg text-[10px] font-black uppercase tracking-tighter text-destructive hover:bg-destructive/10"
+                            >
+                                <Trash2 className="mr-1 h-3 w-3" /> Xóa
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                      {classes.length === 0 && (
+                        <div className="col-span-full flex flex-col items-center justify-center py-20 text-muted-foreground">
+                            <LayoutGrid className="h-12 w-12 opacity-10 mb-4" />
+                            <p className="italic font-medium">Chưa có lớp học nào được tạo.</p>
+                        </div>
+                      )}
+                    </div>
+                </ScrollArea>
             </CardContent>
           </Card>
         </TabsContent>
