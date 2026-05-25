@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -80,7 +81,7 @@ const ReportView: React.FC<ReportViewProps> = ({ assignment, submissions, onBack
           <ArrowLeft className="mr-2 h-4 w-4" /> Quay lại
         </Button>
         <div>
-          <h1 className="text-3xl font-black text-foreground">Báo cáo: {assignment.title}</h1>
+          <h1 className="text-3xl font-black text-foreground">Kết quả bài làm: {assignment.title}</h1>
           <p className="text-muted-foreground font-medium">Môn: {assignment.subject} • Tổng: {totalPoints} điểm • {submissions.length} bài nộp</p>
         </div>
       </div>

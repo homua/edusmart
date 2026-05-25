@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -242,7 +243,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                     className="flex-1 rounded-xl h-10 font-black text-[11px] uppercase tracking-wider hover:bg-primary/10 hover:text-primary" 
                     onClick={() => onViewReport(assignment)}
                   >
-                    <Search className="mr-2 w-4 h-4" /> Báo cáo
+                    <Search className="mr-2 w-4 h-4" /> Xem kết quả
                   </Button>
                   <Button 
                     variant="ghost" 
