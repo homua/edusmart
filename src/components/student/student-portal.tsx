@@ -65,7 +65,7 @@ const StudentPortal: React.FC<StudentPortalProps> = ({
               <CardHeader>
                 <div className="flex justify-between items-start gap-2 mb-1">
                   <Badge variant="outline" className="text-[10px] uppercase tracking-tighter font-black">
-                    {assignment.subject}
+                    Môn: {assignment.subject}
                   </Badge>
                   {submitted ? (
                     <Badge className="bg-accent text-accent-foreground text-[10px] uppercase font-black">Hoàn thành</Badge>
