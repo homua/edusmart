@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -372,7 +371,7 @@ const AssignmentForm: React.FC<AssignmentFormProps> = ({ teacherId, classes, onS
                                 <SelectContent className="rounded-xl">
                                     <SelectItem value="MCQ_4">Dạng 4 đáp án (A, B, C, D)</SelectItem>
                                     <SelectItem value="TRUE_FALSE">Dạng Đúng / Sai</SelectItem>
-                                    <SelectItem value="SHORT_ANSWER">Dạng Trả lời ngắn</SelectItem>
+                                    <SelectItem value="SHORT_ANSWER">Dạng điền khuyết / Trả lời ngắn</SelectItem>
                                     <SelectItem value="ALL_MCQ" className="font-bold text-primary">Tổng hợp các dạng trên</SelectItem>
                                 </SelectContent>
                             </Select>

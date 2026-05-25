@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -18,7 +17,7 @@ const AIQuestionTypeEnum = z.enum([
   'TEXT',           // Tự luận (dài)
   'MCQ_4',          // Trắc nghiệm 4 đáp án
   'TRUE_FALSE',     // Trắc nghiệm Đúng/Sai
-  'SHORT_ANSWER',   // Trắc nghiệm trả lời ngắn (tự điền từ)
+  'SHORT_ANSWER',   // Trắc nghiệm trả lời ngắn (điền khuyết)
   'ALL_MCQ'         // Tổng hợp tất cả các dạng trắc nghiệm trên
 ]);
 
@@ -52,7 +51,7 @@ const generateQuestionsPrompt = ai.definePrompt({
   name: 'generateQuestionsPrompt',
   input: {schema: GenerateQuestionsInputSchema},
   output: {schema: GenerateQuestionsOutputSchema},
-  prompt: `Bạn là một trợ lý chuyên gia thiết kế chương trình giảng duy của Việt Nam.
+  prompt: `Bạn là một trợ lý chuyên gia thiết kế chương trình giảng dạy của Việt Nam.
 Nhiệm vụ: Tạo ra chính xác {{count}} câu hỏi cho bài tập "{{title}}" thuộc môn {{subject}} với độ khó {{difficulty}}.
 
 QUY TẮC BẮT BUỘC về dạng câu hỏi (Dựa trên yêu cầu: {{questionType}}):
@@ -70,9 +69,10 @@ QUY TẮC BẮT BUỘC về dạng câu hỏi (Dựa trên yêu cầu: {{questio
    - Bạn PHẢI đặt "type": "MULTIPLE_CHOICE".
    - Trường "options" PHẢI chỉ có 2 lựa chọn: ["Đúng", "Sai"].
 
-4. NẾU yêu cầu là 'SHORT_ANSWER' (Trả lời ngắn):
+4. NẾU yêu cầu là 'SHORT_ANSWER' (Điền khuyết / Trả lời ngắn):
    - Bạn PHẢI đặt "type": "MULTIPLE_CHOICE" (Vì đây là dạng trắc nghiệm khách quan).
    - Bạn PHẢI để trường "options" là mảng rỗng [].
+   - Câu hỏi nên có dạng một câu khẳng định thiếu thông tin hoặc một câu hỏi trực tiếp mà câu trả lời là một từ/cụm từ cụ thể.
    - "correctAnswer" là từ hoặc cụm từ ngắn gọn, chính xác duy nhất.
 
 5. NẾU yêu cầu là 'ALL_MCQ' (Tổng hợp trắc nghiệm):
