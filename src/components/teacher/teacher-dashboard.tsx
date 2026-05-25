@@ -1,12 +1,12 @@
-
 "use client";
 
 import React, { useState } from 'react';
 import type { User, Class, Assignment, Submission } from '@/lib/types';
+import { QuestionType } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Users, Trash2, FileText, Pencil, KeyRound, Clock, CheckCircle, Search } from 'lucide-react';
+import { Plus, Users, Trash2, FileText, Pencil, KeyRound, Clock, CheckCircle, Search, AlertCircle } from 'lucide-react';
 import { format, parseISO, isAfter, isBefore } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -162,6 +162,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
           const isCompleted = assignmentSubmissions.length >= targetStudentsCount && targetStudentsCount > 0;
           const { status, message } = getTimeStatus(assignment);
           const completionRate = Math.round((assignmentSubmissions.length / (targetStudentsCount || 1)) * 100);
+          const hasTextQuestions = assignment.questions.some(q => q.type === QuestionType.TEXT);
 
           return (
             <Card key={assignment.id} className="rounded-3xl shadow-lg shadow-primary/5 flex flex-col overflow-hidden border-primary/10 hover:border-primary/30 transition-all group">
@@ -183,13 +184,23 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                 <CardTitle className="text-xl font-black text-foreground group-hover:text-primary transition-colors leading-tight">
                   {assignment.title}
                 </CardTitle>
-                <CardDescription className="flex items-center gap-3 mt-3">
-                  <div className="flex items-center gap-1 text-[11px] font-bold text-muted-foreground uppercase">
-                    <FileText className="w-3.5 h-3.5 text-primary/70" /> {assignment.questions.length} câu
+                <CardDescription className="flex flex-col gap-2 mt-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1 text-[11px] font-bold text-muted-foreground uppercase">
+                      <FileText className="w-3.5 h-3.5 text-primary/70" /> {assignment.questions.length} câu
+                    </div>
+                    <div className="flex items-center gap-1 text-[11px] font-bold text-muted-foreground uppercase">
+                      <Clock className="w-3.5 h-3.5 text-primary/70" /> {message}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1 text-[11px] font-bold text-muted-foreground uppercase">
-                    <Clock className="w-3.5 h-3.5 text-primary/70" /> {message}
-                  </div>
+                  {hasTextQuestions && (
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-yellow-100/50 border border-yellow-200 rounded-xl w-fit">
+                      <AlertCircle className="w-3.5 h-3.5 text-yellow-600" />
+                      <p className="text-[9px] font-black text-yellow-700 uppercase tracking-widest">
+                        Bài tập tự luận: Chờ giáo viên chấm điểm
+                      </p>
+                    </div>
+                  )}
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-grow pt-0">
