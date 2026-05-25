@@ -5,8 +5,8 @@ import { FirebaseClientProvider } from '@/firebase';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 export const metadata: Metadata = {
-  title: 'EduSmart Cloud | Nền tảng Giáo dục Thông minh',
-  description: 'Hệ thống giao bài tập và quản lý học sinh thông minh tích hợp AI cho trường học.',
+  title: 'Giao Bài Tập AI | giaobaitapai.cloud',
+  description: 'Hệ thống giao bài tập và quản lý học sinh thông minh tích hợp AI dành cho giáo viên và học sinh.',
 };
 
 export default function RootLayout({
