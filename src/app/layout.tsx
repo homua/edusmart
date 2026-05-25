@@ -5,8 +5,18 @@ import { FirebaseClientProvider } from '@/firebase';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://giaobaitapai.cloud'),
   title: 'Giao Bài Tập AI | giaobaitapai.cloud',
   description: 'Hệ thống giao bài tập và quản lý học sinh thông minh tích hợp AI dành cho giáo viên và học sinh.',
+  keywords: ['giao bài tập ai', 'giáo dục thông minh', 'giaobaitapai.cloud', 'quản lý học sinh'],
+  openGraph: {
+    title: 'Giao Bài Tập AI | giaobaitapai.cloud',
+    description: 'Hệ thống giao bài tập và quản lý học sinh thông minh tích hợp AI.',
+    url: 'https://giaobaitapai.cloud',
+    siteName: 'Giao Bài Tập AI',
+    locale: 'vi_VN',
+    type: 'website',
+  },
 };
 
 export default function RootLayout({

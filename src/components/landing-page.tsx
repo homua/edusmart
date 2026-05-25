@@ -26,10 +26,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
         <div className="h-1 w-20 bg-accent mx-auto rounded-full"></div>
       </div>
 
-      <div className="bg-muted/10 p-3 rounded-2xl mb-8 max-w-xs mx-auto border border-border/30">
-        <p className="text-[9px] font-medium text-muted-foreground/50 uppercase tracking-[0.2em] leading-relaxed">
-          Đơn vị vận hành: <span className="text-foreground/60 uppercase">Trường PTDTBT THCS Ma Thì Hồ</span> <br/>
-          Phát triển bởi: <span className="text-foreground/60 uppercase">Giàng Thị Long Nhi</span>
+      <div className="bg-muted/10 p-4 rounded-2xl mb-8 max-w-sm mx-auto border border-border/30 backdrop-blur-sm">
+        <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-[0.2em] leading-relaxed">
+          Đơn vị vận hành: <span className="text-foreground/80 font-black">Trường PTDTBT THCS Ma Thì Hồ</span> <br/>
+          Phát triển bởi: <span className="text-foreground/80 font-black">Giàng Thị Long Nhi</span>
         </p>
       </div>
 
@@ -40,6 +40,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
       >
         Đăng nhập hệ thống
       </Button>
+
+      <p className="mt-8 text-[10px] text-muted-foreground font-medium uppercase tracking-[0.3em] opacity-40">
+        &copy; 2024 giaobaitapai.cloud
+      </p>
     </div>
   );
 };
