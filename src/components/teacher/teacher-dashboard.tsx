@@ -6,7 +6,7 @@ import { QuestionType } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Users, Trash2, FileText, Pencil, KeyRound, Clock, CheckCircle, Search, AlertCircle } from 'lucide-react';
+import { Plus, Users, Trash2, FileText, Pencil, KeyRound, Clock, CheckCircle, Search, AlertCircle, LayoutGrid } from 'lucide-react';
 import { format, parseISO, isAfter, isBefore } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -163,23 +163,36 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
           const { status, message } = getTimeStatus(assignment);
           const completionRate = Math.round((assignmentSubmissions.length / (targetStudentsCount || 1)) * 100);
           const hasTextQuestions = assignment.questions.some(q => q.type === QuestionType.TEXT);
+          
+          const assignmentClasses = classes.filter(c => assignment.classIds.includes(c.id));
 
           return (
             <Card key={assignment.id} className="rounded-3xl shadow-lg shadow-primary/5 flex flex-col overflow-hidden border-primary/10 hover:border-primary/30 transition-all group">
               <CardHeader className="pb-3">
-                <div className="flex justify-between items-center mb-3">
-                  <Badge variant="outline" className="text-[10px] border-muted-foreground/30 text-muted-foreground uppercase tracking-widest font-black px-2 py-0.5">
-                    {assignment.subject}
-                  </Badge>
-                  {isCompleted ? (
-                    <Badge className="bg-accent/20 text-accent border-none text-[10px] uppercase font-black px-2 py-0.5">Hoàn thành</Badge>
-                  ) : status === 'NOT_STARTED' ? (
-                    <Badge variant="secondary" className="text-[10px] uppercase font-black px-2 py-0.5">Chưa đến giờ</Badge>
-                  ) : status === 'EXPIRED' ? (
-                    <Badge variant="destructive" className="text-[10px] uppercase font-black px-2 py-0.5">Đã kết thúc</Badge>
-                  ) : (
-                    <Badge className="bg-primary/20 text-primary border-none text-[10px] uppercase font-black px-2 py-0.5">Đang giao</Badge>
-                  )}
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex flex-col gap-1.5 flex-1 mr-2">
+                    <Badge variant="outline" className="w-fit text-[10px] border-muted-foreground/30 text-muted-foreground uppercase tracking-widest font-black px-2 py-0.5 whitespace-nowrap">
+                      Môn: {assignment.subject}
+                    </Badge>
+                    <div className="flex flex-wrap gap-1">
+                      {assignmentClasses.map(cls => (
+                        <Badge key={cls.id} variant="secondary" className="bg-primary/10 text-primary border-none text-[9px] uppercase font-black px-2 py-0.5">
+                          {cls.name}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex-shrink-0">
+                    {isCompleted ? (
+                      <Badge className="bg-accent/20 text-accent border-none text-[10px] uppercase font-black px-2 py-0.5">Hoàn thành</Badge>
+                    ) : status === 'NOT_STARTED' ? (
+                      <Badge variant="secondary" className="text-[10px] uppercase font-black px-2 py-0.5">Chưa đến giờ</Badge>
+                    ) : status === 'EXPIRED' ? (
+                      <Badge variant="destructive" className="text-[10px] uppercase font-black px-2 py-0.5">Đã kết thúc</Badge>
+                    ) : (
+                      <Badge className="bg-primary/20 text-primary border-none text-[10px] uppercase font-black px-2 py-0.5">Đang giao</Badge>
+                    )}
+                  </div>
                 </div>
                 <CardTitle className="text-xl font-black text-foreground group-hover:text-primary transition-colors leading-tight">
                   {assignment.title}
