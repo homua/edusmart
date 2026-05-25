@@ -5,8 +5,8 @@ import { FirebaseClientProvider } from '@/firebase';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 export const metadata: Metadata = {
-  title: 'EduSmart Cloud',
-  description: 'Nền tảng Giáo dục Thông minh',
+  title: 'EduSmart Cloud | Nền tảng Giáo dục Thông minh',
+  description: 'Hệ thống giao bài tập và quản lý học sinh thông minh tích hợp AI cho trường học.',
 };
 
 export default function RootLayout({
@@ -15,7 +15,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="vi">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
