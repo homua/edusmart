@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState } from 'react';
@@ -43,7 +42,7 @@ const ReportView: React.FC<ReportViewProps> = ({ assignment, submissions, onBack
     if (answerIndex > -1) {
       updatedAnswers[answerIndex] = { ...updatedAnswers[answerIndex], awardedPoints: points };
     } else {
-      // Handle cases where the answer record might be missing (e.g. new questions added later)
+      // Handle cases where the answer record might be missing
       updatedAnswers.push({ questionId, answer: '', awardedPoints: points });
     }
     
@@ -148,7 +147,7 @@ const ReportView: React.FC<ReportViewProps> = ({ assignment, submissions, onBack
                     <div>
                       <span className="font-black text-lg">{sub.studentName}</span>
                       <div className="flex gap-2 mt-1">
-                        {!sub.isGraded && <Badge variant="secondary" className="text-[9px] uppercase font-black bg-primary/10 text-primary">Cần review tự luận</Badge>}
+                        {!sub.isGraded && <Badge variant="secondary" className="text-[9px] uppercase font-black bg-primary/10 text-primary">Cần chấm phần tự luận</Badge>}
                       </div>
                     </div>
                     <div className="text-right">
@@ -206,9 +205,9 @@ const ReportView: React.FC<ReportViewProps> = ({ assignment, submissions, onBack
                                 isCorrect ? <CheckCircle className="h-4 w-4 text-accent" /> : <XCircle className="h-4 w-4 text-destructive" />
                               )}
                             </div>
-                            <p className={`font-black text-foreground whitespace-pre-wrap leading-relaxed`}>
+                            <div className="p-3 bg-muted rounded-xl text-foreground font-black whitespace-pre-wrap leading-relaxed border border-border/30 shadow-inner">
                               {studentAnswer?.answer || '(Không có câu trả lời)'}
-                            </p>
+                            </div>
                           </div>
                         </div>
                       </div>
